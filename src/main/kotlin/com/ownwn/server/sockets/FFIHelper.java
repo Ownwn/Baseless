@@ -4,7 +4,7 @@ import java.lang.foreign.*;
 
 import com.ownwn.server.java.lang.replacement.ArrayList;
 import com.ownwn.server.java.lang.replacement.List;
-import java.util.stream.IntStream;
+import com.ownwn.server.java.lang.replacement.stream.IntStream;
 
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 import static java.lang.foreign.ValueLayout.JAVA_SHORT;
