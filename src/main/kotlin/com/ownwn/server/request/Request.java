@@ -8,11 +8,10 @@ import com.ownwn.server.java.lang.replacement.stream.InputStream;
 import com.ownwn.server.java.lang.replacement.stream.OutputStream;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 
 public abstract class Request {
-    protected final InetAddress remoteAddress;
+    protected final SimpleAddress remoteAddress;
     protected final InputStream requestBody;
     protected final Headers requestHeaders;
     protected final OutputStream responseBody;
@@ -20,7 +19,7 @@ public abstract class Request {
     protected final Map<String, String> cookies;
     protected final Map<String, String> queryParameters;
 
-    public Request(InetAddress remoteAddress, InputStream requestBody, Headers requestHeaders,
+    public Request(SimpleAddress remoteAddress, InputStream requestBody, Headers requestHeaders,
                    OutputStream responseBody, String path, Map<String, String> cookies, Map<String, String> queryParameters) {
         this.remoteAddress = remoteAddress;
         this.requestBody = requestBody;
@@ -70,7 +69,7 @@ public abstract class Request {
         return cookies;
     }
 
-    public InetAddress remoteAddress() {
+    public SimpleAddress remoteAddress() {
         return remoteAddress;
     }
 

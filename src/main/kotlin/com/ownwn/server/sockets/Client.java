@@ -2,7 +2,6 @@ package com.ownwn.server.sockets;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.net.InetAddress;
 import com.ownwn.server.java.lang.replacement.*;
 import com.ownwn.server.java.lang.replacement.stream.InputStream;
 import com.ownwn.server.java.lang.replacement.stream.OutputStream;
@@ -15,7 +14,7 @@ import static java.lang.foreign.ValueLayout.JAVA_LONG;
 public abstract class Client {
     public abstract InputStream getInputStream(Arena arena);
     public abstract OutputStream getOutputStream(Arena arena);
-    public abstract InetAddress getInetAddress();
+    public abstract SimpleAddress getInetAddress();
 
     public static Client fromFileSocketDescriptor(int c) {
         return new Client() {
@@ -74,9 +73,9 @@ public abstract class Client {
             }
 
             @Override
-            public InetAddress getInetAddress() {
-                return InetAddress.ofLiteral("123.123.123.123");
+            public SimpleAddress getInetAddress() {
+                return new SimpleAddress("123.123.123.123", 8083); // todo
             }
-        }; // todo
+        };
     }
 }

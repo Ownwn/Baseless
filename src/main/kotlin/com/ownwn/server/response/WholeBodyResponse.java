@@ -3,11 +3,11 @@ package com.ownwn.server.response;
 import com.ownwn.server.Headers;
 import com.ownwn.server.JsonConvertible;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import com.ownwn.server.java.lang.replacement.*;
+import com.ownwn.server.java.lang.replacement.stream.ByteArrayInputStream;
+import com.ownwn.server.java.lang.replacement.stream.InputStream;
 
 public class WholeBodyResponse extends Response {
     private final byte[] body;

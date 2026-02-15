@@ -6,7 +6,6 @@ import com.ownwn.server.java.lang.replacement.stream.InputStream;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 
 public class TemplateResponse extends Response {
     public static final String templatesDirectory = "templates/";
@@ -28,7 +27,7 @@ public class TemplateResponse extends Response {
     public InputStream body() throws IOException {
         Optional<File> file = getTemplateFile(url);
         if (file.isPresent()) {
-            return Files.newInputStream(file.get().toPath());
+            return Files.newInputSteam(file.get().toPath());
         }
         status = 404;
 
