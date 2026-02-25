@@ -11,10 +11,7 @@ public final class ByteArrayInputStream implements InputStream {
     @Override
     public int read() throws IOException {
         if (i >= body.length) return -1;
-        int res = body[i];
-        if (res != 0) i++;
-
-        return res;
+        return body[i++] & 0xFF;
     }
 
     @Override

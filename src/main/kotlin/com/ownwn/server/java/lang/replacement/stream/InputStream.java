@@ -11,7 +11,7 @@ public interface InputStream {
     default int readNBytes(byte[] buf, int offset, int length) throws IOException {
         int read;
         int i = 0;
-        while ((read = read()) != 0 && i < length) {
+        while ((read = read()) != -1 && i < length) {
             buf[offset + i++] = (byte) (read & 0xff);
         }
         return i;
@@ -23,7 +23,7 @@ public interface InputStream {
 
         int read;
 
-        while ((read = read()) != 0 && read != -1) {
+        while ((read = read()) != -1) {
             outputStream.write(read);
             transferred++;
         }
