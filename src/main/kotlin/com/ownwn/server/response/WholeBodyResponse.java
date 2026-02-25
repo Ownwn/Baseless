@@ -3,12 +3,11 @@ package com.ownwn.server.response;
 import com.ownwn.server.Headers;
 import com.ownwn.server.JsonConvertible;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
+import com.ownwn.server.java.lang.replacement.*;
+import com.ownwn.server.java.lang.replacement.stream.ByteArrayInputStream;
+import com.ownwn.server.java.lang.replacement.stream.InputStream;
 
 public class WholeBodyResponse extends Response {
     private final byte[] body;
@@ -55,8 +54,8 @@ public class WholeBodyResponse extends Response {
         return WholeBodyResponse.of(200, body);
     }
 
-    public static <T extends JsonConvertible> WholeBodyResponse json(List<T> list) {
-        String json = list.stream().map(JsonConvertible::toJson).collect(Collectors.joining(", ", "[", "]"));
+    public static <T extends JsonConvertible> WholeBodyResponse json(java.util.List<T> list) {
+        String json = new ArrayList<>(list).stream().map(JsonConvertible::toJson).collect(Collectors.joining(", ", "[", "]"));
         return WholeBodyResponse.of(200, json.getBytes(StandardCharsets.UTF_8), Map.of("Content-Type", "application/json"));
     }
 

@@ -1,8 +1,9 @@
 package com.ownwn.server;
 
+import com.ownwn.server.java.lang.replacement.*;
+import com.ownwn.server.java.lang.replacement.stream.InputStream;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,9 +28,10 @@ public class FormByteParser {
         try {
             this.bytes = new byte[contentLength];
             if (body.readNBytes(this.bytes, 0, contentLength) < contentLength) {
-                throw new IOException(); // code smell? definitely
+                throw new IOException("didn't read all the bytes"); // code smell? definitely
             }
         } catch (IOException e) {
+            e.printStackTrace();
             chunks = List.of();
             return;
         }

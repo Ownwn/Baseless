@@ -2,14 +2,14 @@ package com.ownwn.server;
 
 import com.ownwn.server.intercept.Intercept;
 import com.ownwn.server.intercept.Interceptor;
+import com.ownwn.server.java.lang.replacement.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.JarURLConnection;
 import java.net.URL;
-import java.util.*;
+import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -76,16 +76,14 @@ public class AnnotationFinder {
         }
 
         File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    classes.addAll(findClasses(file, packageName + "." + file.getName()));
-                } else if (file.getName().endsWith(".class")) {
-                    String className = (packageName.isEmpty() ? "" : packageName + ".") + file.getName().substring(0, file.getName().length() - 6);
-                    try {
-                        classes.add(Class.forName(className));
-                    } catch (ClassNotFoundException ignored) {
-                    }
+        for (File file : files) {
+            if (file.isDirectory()) {
+                classes.addAll(findClasses(file, packageName + "." + file.getName()));
+            } else if (file.getName().endsWith(".class")) {
+                String className = (packageName.isEmpty() ? "" : packageName + ".") + file.getName().substring(0, file.getName().length() - 6);
+                try {
+                    classes.add(Class.forName(className));
+                } catch (ClassNotFoundException ignored) {
                 }
             }
         }
@@ -100,7 +98,7 @@ public class AnnotationFinder {
     private static <T> List<Method> getAnnotatedMethods(Class<T> clazz, Class<? extends Annotation> annotationClass) {
         return Arrays.stream(clazz.getDeclaredMethods())
                 .filter(m -> m.isAnnotationPresent(annotationClass))
-                .toList();
+                .toList(); // todo remove constructor wrap
     }
 
     @SuppressWarnings("unchecked")

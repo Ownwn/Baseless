@@ -3,7 +3,7 @@ package com.ownwn.server.sockets;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.net.InetAddress;
-import java.util.List;
+import com.ownwn.server.java.lang.replacement.List;
 
 import static java.lang.foreign.ValueLayout.*;
 
@@ -19,7 +19,7 @@ public class SocketServer {
 
     public SocketServer(short port, Arena arena) throws Throwable {
 
-        ffiHelper = new FFIHelper(arena);
+        ffiHelper = FFIHelper.of();
         this.arena = arena;
 
         socketHandle = (int) ffiHelper.callIntFunction("socket", JAVA_INT, List.of(2,1,0));

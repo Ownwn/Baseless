@@ -1,6 +1,6 @@
 package com.ownwn.server;
 
-import java.util.Arrays;
+import com.ownwn.server.java.lang.replacement.Arrays;
 
 public enum HttpMethod {
     GET, POST, PUT, DELETE, PATCH, HEAD, CONNECT, OPTIONS, TRACE; // todo most are unsupported
