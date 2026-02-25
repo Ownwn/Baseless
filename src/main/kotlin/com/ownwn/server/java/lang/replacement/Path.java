@@ -1,14 +1,23 @@
 package com.ownwn.server.java.lang.replacement;
 
-public class Path {
-    private final File file;
+import org.jetbrains.annotations.NotNull;
 
-    private Path(String file) {
-        this.file = new File(file);
+public record Path(File file) {
+    public Path(String file) {
+        this(new File(file));
     }
 
     public static Path of(String s) {
         return new Path(s);
+    }
 
+    public File toFile() {
+        return file;
+    }
+
+    @NotNull
+    @Override
+    public String toString() {
+        return file.toString();
     }
 }

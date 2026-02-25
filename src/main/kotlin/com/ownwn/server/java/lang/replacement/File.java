@@ -31,8 +31,29 @@ public final class File {
         }
     }
 
-    public void getAllBytes() {
+    public byte[] getAllBytes() {
+        try (Arena a = Arena.ofConfined()) {
+            FFIHelper ffiHelper = FFIHelper.of();
+            try {
+                MemorySegment fileNameMemory = a.allocateFrom(path);
+                int fd = (int) ffiHelper.callFunction("open", ValueLayout.JAVA_INT, List.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT), List.of(fileNameMemory, 0));
+                if (fd < 0) {
+                    throw new RuntimeException("error opening file " + path);
+                }
 
+                long size = (long) ffiHelper.callFunction("lseek", ValueLayout.JAVA_LONG, List.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT), List.of(fd, 0L, 2));
+                ffiHelper.callFunction("lseek", ValueLayout.JAVA_LONG, List.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT), List.of(fd, 0L, 0));
+
+                MemorySegment buf = a.allocate(size);
+                ffiHelper.callFunction("read", ValueLayout.JAVA_LONG, List.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG), List.of(fd, buf, size));
+
+                ffiHelper.callFunction("close", ValueLayout.JAVA_INT, List.of(ValueLayout.JAVA_INT), List.of(fd));
+
+                return buf.toArray(ValueLayout.JAVA_BYTE);
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public String getName() {
@@ -60,7 +81,8 @@ public final class File {
                     String fileName = dirent.getString(19);
                     if (fileName.equals(".") || fileName.equals("..")) continue;
 
-                    files.add(new File(fileName));
+                    String newFileName = path.endsWith("/") ? path + fileName : path + "/" + fileName;
+                    files.add(new File(newFileName));
                 }
             } catch (Throwable e) {
                 throw new RuntimeException(e);

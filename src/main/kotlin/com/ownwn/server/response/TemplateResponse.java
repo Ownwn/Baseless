@@ -27,7 +27,7 @@ public class TemplateResponse extends Response {
     public InputStream body() throws IOException {
         Optional<File> file = getTemplateFile(url);
         if (file.isPresent()) {
-            return Files.newInputSteam(file.get().toPath());
+            return Files.newInputStream(file.get().toPath());
         }
         status = 404;
 

@@ -107,8 +107,8 @@ public abstract class Request {
             body.transferTo(responseBody);
 
             responseBody.close();
-        } catch (IOException ignored) {
-            // todo handle this better?
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
