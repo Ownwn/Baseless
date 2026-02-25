@@ -23,7 +23,7 @@ public interface InputStream {
 
         int read;
 
-        while ((read = read()) > 0) {
+        while ((read = read()) != 0 && read != -1) {
             outputStream.write(read);
             transferred++;
         }

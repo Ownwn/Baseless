@@ -1,5 +1,6 @@
 package com.ownwn.server.sockets;
 
+import java.io.IOException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import com.ownwn.server.java.lang.replacement.*;
@@ -37,21 +38,37 @@ public abstract class Client {
                     }
 
                     @Override
-                    public int readNBytes(byte[] buf, int offset, int length)  {
+                    public int readNBytes(byte[] buf, int offset, int length) throws IOException {
                         try {
-                            MemorySegment tempBuf = arena.allocate(length);
-                            long numReaded = (long) FFIHelper.of().callFunction("read", JAVA_LONG, List.of(JAVA_INT, ADDRESS, JAVA_LONG), List.of(c, tempBuf, length));
+                            // struct timeval
+                            MemorySegment timeval = arena.allocate(16);
+                            timeval.set(JAVA_LONG, 0, 5);
+                            timeval.set(JAVA_LONG, 8, 0);
+                            FFIHelper.of().callFunction("setsockopt", JAVA_INT,
+                                    List.of(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT),
+                                    List.of(c, 1, 20, timeval, 16));
 
-                            if (numReaded <= 0) {
-                                return (int) numReaded;
-                            }
+                            int totalRead = 0;
+                            while (totalRead < length) {
+                                int toReadChunk = Math.min(length - totalRead, 4096);
+                                MemorySegment tempBuf = arena.allocate(toReadChunk);
 
-                            for (int i = 0; i < numReaded; i++) {
-                                buf[offset + i] = tempBuf.get(JAVA_BYTE, i);
+                                long numReaded = (long) FFIHelper.of().callFunction("read", JAVA_LONG, List.of(JAVA_INT, ADDRESS, JAVA_LONG), List.of(c, tempBuf, toReadChunk));
+
+                                if (numReaded < 0) {
+                                    return totalRead == 0 ? -1 : totalRead;
+                                } else if (numReaded == 0) {
+                                    break;
+                                } else {
+                                    for (int i = 0; i < numReaded; i++) {
+                                        buf[offset + totalRead + i] = tempBuf.get(JAVA_BYTE, i);
+                                    }
+                                    totalRead += numReaded;
+                                }
                             }
-                            return (int) numReaded;
+                            return totalRead;
                         } catch (Throwable e) {
-                            throw new RuntimeException(e);
+                            throw new IOException(e);
                         }
                     }
 

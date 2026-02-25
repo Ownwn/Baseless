@@ -28,9 +28,10 @@ public class FormByteParser {
         try {
             this.bytes = new byte[contentLength];
             if (body.readNBytes(this.bytes, 0, contentLength) < contentLength) {
-                throw new IOException(); // code smell? definitely
+                throw new IOException("didn't read all the bytes"); // code smell? definitely
             }
         } catch (IOException e) {
+            e.printStackTrace();
             chunks = List.of();
             return;
         }
