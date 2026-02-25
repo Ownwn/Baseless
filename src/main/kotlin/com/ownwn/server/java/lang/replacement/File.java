@@ -31,6 +31,10 @@ public final class File {
         }
     }
 
+    public void getAllBytes() {
+
+    }
+
     public String getName() {
         String[] parts = path.split("/"); // todo this is jank
         return parts[parts.length - 1];
@@ -64,6 +68,10 @@ public final class File {
 
             return files.toArray(new File[files.size()]);
         }
+    }
+
+    public Path toPath() {
+        return Path.of(this.path);
     }
 
     @Override
