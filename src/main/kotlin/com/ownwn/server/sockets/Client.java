@@ -37,6 +37,25 @@ public abstract class Client {
                     }
 
                     @Override
+                    public int readNBytes(byte[] buf, int offset, int length)  {
+                        try {
+                            MemorySegment tempBuf = arena.allocate(length);
+                            long numReaded = (long) FFIHelper.of().callFunction("read", JAVA_LONG, List.of(JAVA_INT, ADDRESS, JAVA_LONG), List.of(c, tempBuf, length));
+
+                            if (numReaded <= 0) {
+                                return (int) numReaded;
+                            }
+
+                            for (int i = 0; i < numReaded; i++) {
+                                buf[offset + i] = tempBuf.get(JAVA_BYTE, i);
+                            }
+                            return (int) numReaded;
+                        } catch (Throwable e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    @Override
                     public void close() {
                         try {
                             FFIHelper.of().callIntFunction("close", JAVA_INT, List.of(c));
