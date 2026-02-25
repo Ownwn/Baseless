@@ -1,4 +1,4 @@
-package com.ownwn.datastore
+package com.ownwn.baseless
 
 import com.ownwn.server.request.Request
 import com.ownwn.server.intercept.Intercept
@@ -22,7 +22,7 @@ class Auth {
             return
         }
 
-        val cookieValue = DataStoreApplication.getEnv(cookieName) ?: run {
+        val cookieValue = BaselessApplication.getEnv(cookieName) ?: run {
             System.err.println("Missing cookie value!")
             interceptor.closeWithResponse(WholeBodyResponse.unauthorised())
             return

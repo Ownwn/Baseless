@@ -1,4 +1,4 @@
-package com.ownwn.datastore
+package com.ownwn.baseless
 
 import com.ownwn.server.Handle
 import com.ownwn.server.HttpMethod

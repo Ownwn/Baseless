@@ -1,4 +1,4 @@
-MAIN=com.ownwn.datastore.DataStoreApplicationKt
+MAIN=com.ownwn.baseless.BaselessApplication.kt
 SRC_DIR=src/main/kotlin
 
 JAVA_SOURCES = $(shell find $(SRC_DIR) -name "*.java")

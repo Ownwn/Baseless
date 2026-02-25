@@ -1,11 +1,11 @@
-package com.ownwn.datastore
+package com.ownwn.baseless
 
-import com.ownwn.datastore.Env2.loadEnv
+import com.ownwn.baseless.Env2.loadEnv
 import com.ownwn.server.Server
 import java.nio.file.Files
 import java.nio.file.Path
 
-class DataStoreApplication {
+class BaselessApplication {
     companion object {
         fun getEnv(key: String): String? {
             return Env2.envs[key]
@@ -15,7 +15,7 @@ class DataStoreApplication {
 
 fun main() {
     loadEnv()
-    val port = DataStoreApplication.getEnv("PORT")?.toShort() ?: throw RuntimeException("Missing port .env")
+    val port = BaselessApplication.getEnv("PORT")?.toShort() ?: throw RuntimeException("Missing port .env")
     Server.create("/api", port)
 }
 
