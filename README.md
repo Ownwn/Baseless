@@ -19,6 +19,6 @@ designed for when you don't particularly trust the server
 
 - Java foreign memory & function access.
 - In-depth knowledge of exactly how HTTP1.x works down to the bytes.
-- todo maybe regex engine?
+- Regex engine/matching
 - A good refresher on libc for sockets, and how structs are stored in memory (padding etc)
 - Java shared thread access on arenas
