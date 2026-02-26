@@ -4,6 +4,7 @@ import com.ownwn.server.request.Request
 import com.ownwn.server.intercept.Intercept
 import com.ownwn.server.intercept.InterceptReceiver
 import com.ownwn.server.response.WholeBodyResponse
+import jdk.internal.joptsimple.internal.Strings.isNullOrEmpty
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
@@ -17,7 +18,7 @@ class Auth {
             return
         }
 
-        if (request.cookies().isNullOrEmpty()) {
+        if (request.cookies()?.java().isNullOrEmpty()) {
             interceptor.closeWithResponse(WholeBodyResponse.unauthorised())
             return
         }

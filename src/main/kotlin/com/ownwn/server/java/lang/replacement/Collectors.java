@@ -1,11 +1,7 @@
 package com.ownwn.server.java.lang.replacement;
 
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collector;
+import com.ownwn.server.java.lang.replacement.function.*;
+import com.ownwn.server.java.lang.replacement.stream.Collector;
 
 public class Collectors {
 
@@ -36,11 +32,6 @@ public class Collectors {
             @Override
             public Function<StringBuilder, String> finisher() {
                 return sb -> prefix + sb.toString() + suffix;
-            }
-
-            @Override
-            public Set<Characteristics> characteristics() {
-                return Set.of();
             }
         };
     }

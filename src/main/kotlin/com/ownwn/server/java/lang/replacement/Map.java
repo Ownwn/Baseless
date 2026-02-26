@@ -1,8 +1,9 @@
 package com.ownwn.server.java.lang.replacement;
 
 
-public interface Map<K, V> extends java.util.Map<K, V> {
+import com.ownwn.server.java.lang.replacement.function.Function;
 
+public interface Map<K, V>{
     static <K, V> Map<K, V> of() {
         return new HashMap<>(); // todo make immutable
     }
@@ -13,6 +14,48 @@ public interface Map<K, V> extends java.util.Map<K, V> {
         return map;
     }
 
-    @Override
     Set<Entry<K, V>> entrySet();
+
+    V put(K k, V value);
+
+    int size();
+
+    default boolean isEmpty() {
+        return size() == 0;
+    }
+
+    V computeIfAbsent(K k, Function<K, V> f);
+
+    boolean containsValue(Object value);
+
+    boolean containsKey(Object key);
+    V get(Object key);
+
+    V remove(Object key);
+
+    void clear();
+
+    Set<K> keySet();
+
+    Collection<V> values();
+
+    default java.util.Map<K, V> java() {
+        var res = new java.util.HashMap<K, V>();
+        for (var e : this.entrySet()) {
+            res.put(e.getKey(), e.getValue());
+        }
+        return res;
+    }
+
+
+
+
+    record Entry<K, V>(K key, V value) {
+        public K getKey() {
+            return key;
+        }
+        public V getValue() {
+            return value;
+        }
+    }
 }

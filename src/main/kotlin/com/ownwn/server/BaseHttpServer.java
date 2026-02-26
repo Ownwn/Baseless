@@ -1,6 +1,7 @@
 package com.ownwn.server;
 
 import com.ownwn.server.java.lang.replacement.*;
+import com.ownwn.server.java.lang.replacement.function.Consumer;
 import com.ownwn.server.java.lang.replacement.stream.InputStream;
 import com.ownwn.server.request.GetRequest;
 import com.ownwn.server.request.PostRequest;

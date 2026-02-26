@@ -1,11 +1,9 @@
 package com.ownwn.server.java.lang.replacement;
 
+import com.ownwn.server.java.lang.replacement.function.Comparator;
 import com.ownwn.server.java.lang.replacement.stream.Stream;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.ListIterator;
 
 @SuppressWarnings("unchecked")
 public class ArrayList<T> implements List<T> {
@@ -21,15 +19,17 @@ public class ArrayList<T> implements List<T> {
     }
 
     /** shallow copy constructor */
-    public ArrayList(List<T> list) {
+    public ArrayList(Collection<T> list) {
         this();
         addAll(list);
     }
 
     /** shallow copy constructor */
-    public ArrayList(Collection<T> list) {
+    public ArrayList(java.util.List<T> list) {
         this();
-        addAll(list);
+        for (T t : list) {
+            add(t);
+        }
     }
 
     @Override
@@ -83,39 +83,14 @@ public class ArrayList<T> implements List<T> {
     }
 
     @Override
-    public boolean containsAll(@NotNull Collection<?> c) {
+    public boolean containsAll(List<?> c) {
         for (var item : c) {
             if (!contains(item)) return false;
         }
         return true;
     }
 
-    @Override
-    public boolean addAll(@NotNull Collection<? extends T> c) {
-        for (var item : c) {
-            add(item);
-        }
-        return true;
-    }
-
-    @Override
-    public boolean addAll(int index, @NotNull Collection<? extends T> c) {
-        for (var item : c) {
-            add(index, item);
-        }
-        return true;
-    }
-
-    @Override
-    public boolean removeAll(@NotNull Collection<?> c) {
-        for (var item : c) {
-            remove(item);
-        }
-        return true;
-    }
-
-    @Override
-    public boolean retainAll(@NotNull Collection<?> c) {
+    public boolean retainAll(List<?> c) {
         List<T> toRemove = new ArrayList<>();
 
         for (int i = 0; i < size(); i++) {
@@ -174,18 +149,18 @@ public class ArrayList<T> implements List<T> {
     }
 
     @Override
-    public ListIterator<T> listIterator() {
-        return null;
-    }
-
-    @Override
-    public ListIterator<T> listIterator(int index) {
-        return null;
-    }
-
-    @Override
     public List<T> subList(int fromIndex, int toIndex) {
         return null;
+    }
+
+    @Override
+    public T removeFirst() {
+        return remove(0);
+    }
+
+    @Override
+    public T removeLast() {
+        return remove(size() - 1);
     }
 
     @Override
@@ -195,6 +170,11 @@ public class ArrayList<T> implements List<T> {
             res[i] = (T) array[i];
         }
         return res;
+    }
+
+    @Override
+    public void sort(Comparator<? super T> comparator) {
+        throw new Error("nyi sort"); // todo
     }
 
     @Override

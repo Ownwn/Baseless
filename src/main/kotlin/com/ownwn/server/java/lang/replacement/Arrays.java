@@ -23,8 +23,16 @@ public class Arrays {
 
     public static <T> Stream<T> stream(T[] arr) { // todo crap
         List<T> l = new ArrayList<>(arr.length);
-        l.addAll(java.util.Arrays.asList(arr));
+        l.addAll(Arrays.asList(arr));
         return l.stream();
+    }
+
+    public static <T> List<T> asList(T[] arr) {
+        List<T> res = new ArrayList<>(arr.length);
+        for (T t : arr) {
+            res.add(t);
+        }
+        return res;
     }
 
     public static String toString(Object[] arr) {

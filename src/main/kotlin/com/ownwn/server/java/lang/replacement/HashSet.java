@@ -1,12 +1,11 @@
 package com.ownwn.server.java.lang.replacement;
 
-import org.jetbrains.annotations.NotNull; // todo remove this shit
+import com.ownwn.server.java.lang.replacement.stream.Stream;
 
-import java.util.Collection;
 import java.util.Iterator;
 
 public class HashSet<T> implements Set<T> {
-    private HashMap<T, Object> map;
+    private final HashMap<T, Object> map;
     private static final Object value = new Object();
 
     public HashSet() {
@@ -56,15 +55,15 @@ public class HashSet<T> implements Set<T> {
         };
     }
 
-    @NotNull
+    
     @Override
     public Object[] toArray() {
         return new Object[0];
     }
 
-    @NotNull
+    
     @Override
-    public <T1> T1[] toArray(@NotNull T1[] a) {
+    public <T1> T1[] toArray(T1[] a) {
         return null;
     }
 
@@ -79,7 +78,7 @@ public class HashSet<T> implements Set<T> {
     }
 
     @Override
-    public boolean containsAll(@NotNull Collection<?> c) {
+    public boolean containsAll(Collection<?> c) {
         for (var item : c) {
             if (!map.containsKey(item)) return false;
         }
@@ -87,7 +86,7 @@ public class HashSet<T> implements Set<T> {
     }
 
     @Override
-    public boolean addAll(@NotNull Collection<? extends T> c) {
+    public boolean addAll(Collection<? extends T> c) {
         for (var item : c) {
             map.put(item, value);
         }
@@ -95,18 +94,13 @@ public class HashSet<T> implements Set<T> {
     }
 
     @Override
-    public boolean retainAll(@NotNull Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public boolean removeAll(@NotNull Collection<?> c) {
-        return false;
-    }
-
-    @Override
     public void clear() {
         map.clear();
+    }
+
+    @Override
+    public Stream<T> stream() {
+        return new Stream<>(this) {};
     }
 
     @Override
@@ -124,7 +118,18 @@ public class HashSet<T> implements Set<T> {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof java.util.HashSet<?> set)) return false;
+        if (obj instanceof java.util.HashSet<?> set) {
+            if (size() != set.size()) return false;
+            for (T t : this) {
+                if (!set.contains(t)) return false;
+            }
+            for (Object t : set) {
+                if (!this.contains(t)) return false;
+            }
+            return true;
+
+        }
+        if (!(obj instanceof HashSet<?> set)) return false;
         if (size() != set.size()) return false;
         return set.containsAll(this) && this.containsAll(set);
     }

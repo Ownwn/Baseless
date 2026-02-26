@@ -1,8 +1,9 @@
 package com.ownwn.server.java.lang.replacement;
 
+import com.ownwn.server.java.lang.replacement.function.Comparator;
 import com.ownwn.server.java.lang.replacement.stream.Stream;
 
-public interface List<T> extends Iterable<T>, java.util.List<T> {
+public interface List<T> extends Collection<T> {
 
     int size();
 
@@ -26,8 +27,30 @@ public interface List<T> extends Iterable<T>, java.util.List<T> {
 
     T[] toArray(Object[] arr);
 
-    @Override
     List<T> subList(int fromIndex, int toIndex);
+
+    T removeFirst();
+    T removeLast();
+
+    default T getFirst() {
+        return get(0);
+    }
+
+    default T getLast() {
+        return get(size() - 1);
+    }
+
+    void sort(Comparator<? super T> comparator);
+
+    void clear();
+
+    default java.util.List<T> java() {
+        var res = new java.util.ArrayList<T>();
+        for (T t : this) {
+            res.add(t);
+        }
+        return res;
+    }
 
     @SafeVarargs // todo bad?
     static <T> List<T> of(T... values) {
@@ -53,7 +76,26 @@ public interface List<T> extends Iterable<T>, java.util.List<T> {
         return res;
     }
 
-    @Override
+    T remove(int index);
+    int indexOf(Object o);
+    int lastIndexOf(Object o);
+
+    default boolean addAll(Collection<? extends T> l) {
+        for (T t : l) {
+            add(t);
+        }
+        return true;
+    }
+
+    default boolean removeAll(List<?> c) {
+        for (var item : c) {
+            remove(item);
+        }
+        return true;
+    }
+
+    boolean containsAll(List<?> l);
+
     default Stream<T> stream() {
         var self = this;
         return new Stream<T>() {{underlying = self;}};

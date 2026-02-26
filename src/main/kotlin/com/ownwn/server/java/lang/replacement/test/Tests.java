@@ -5,11 +5,11 @@ import com.ownwn.server.java.lang.replacement.*;
 public class Tests {
 
     static void main() {
-//        listTest();
-//        hashMapTest();
-//        hashSetTest();
-//        streamTest();
-        fileTest();
+        listTest();
+        hashMapTest();
+        hashSetTest();
+        streamTest();
+//        fileTest();
     }
 
     static void fileTest() {
@@ -135,6 +135,13 @@ public class Tests {
 
             if (map.containsKey(randomKey) != map2.containsKey(randomKey)) throw new Error();
             if (map.containsValue(randomValue) != map2.containsValue(randomValue)) throw new Error();
+
+
+            if (Math.random() < 0.3) {
+                var a1 = map.computeIfAbsent(50, k -> k+4);
+                var a2 = map2.computeIfAbsent(50, k -> k+4);
+                if (!Objects.equals(a1, a2)) throw new Error(a1 + " " + a2);
+            }
 
             var r1 = map.remove(randomKey);
             var r2 = map2.remove(randomKey);

@@ -34,9 +34,9 @@ public class PostRequest extends Request {
         return HttpMethod.POST;
     }
 
-    public Map<String, List<FormAttachment>> loadFormData() {
+    public java.util.Map<String, List<FormAttachment>> loadFormData() {
         if (multiPartFormBoundary == null) return null;
-        if (formData != null) return formData;
+        if (formData != null) return formData.java();
         int contentLength;
         try {
             contentLength = Integer.parseUnsignedInt(requestHeaders().get("Content-Length").trim());
@@ -45,7 +45,8 @@ public class PostRequest extends Request {
         }
 
         FormByteParser parser = new FormByteParser(requestBody, multiPartFormBoundary, contentLength);
-        return formData = parser.getTypeGroups();
+        formData = parser.getTypeGroups();
+        return formData.java();
     }
 
     private String tryParseMultiPartFormBoundary() {
