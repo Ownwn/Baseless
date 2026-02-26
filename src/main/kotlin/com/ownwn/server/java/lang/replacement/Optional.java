@@ -5,8 +5,9 @@ import com.ownwn.server.java.lang.replacement.function.Supplier;
 
 public class Optional<T>  {
     private static final Optional<Object> EMPTY = new Optional<>();
+
+    @SuppressWarnings("unchecked")
     public static <T> Optional<T> empty() {
-        //noinspection unchecked
         return (Optional<T>) EMPTY;
     }
 
