@@ -1,7 +1,5 @@
 package com.ownwn.server.java.lang.replacement;
 
-import org.jetbrains.annotations.NotNull;
-
 public record Path(File file) {
     public Path(String file) {
         this(new File(file));
@@ -15,7 +13,6 @@ public record Path(File file) {
         return file;
     }
 
-    @NotNull
     @Override
     public String toString() {
         return file.toString();

@@ -1,8 +1,7 @@
 package com.ownwn.server.java.lang.replacement;
 
-import java.util.NoSuchElementException;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import com.ownwn.server.java.lang.replacement.function.Function;
+import com.ownwn.server.java.lang.replacement.function.Supplier;
 
 public class Optional<T>  {
     private static final Optional<Object> EMPTY = new Optional<>();

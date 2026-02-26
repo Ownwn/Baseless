@@ -2,8 +2,8 @@ package com.ownwn.server.sockets;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.net.InetAddress;
 import com.ownwn.server.java.lang.replacement.List;
+import com.ownwn.server.java.lang.replacement.SimpleAddress;
 
 import static java.lang.foreign.ValueLayout.*;
 
@@ -14,8 +14,8 @@ public class SocketServer {
 
     private final FFIHelper ffiHelper;
     private final Arena arena;
-    private int socketHandle;
-    private InetAddress inetAddress;
+    private final int socketHandle;
+    private SimpleAddress address;
 
     public SocketServer(short port, Arena arena) throws Throwable {
 
@@ -53,8 +53,8 @@ public class SocketServer {
 
     }
 
-    public InetAddress getHostInetAddress() {
-        if (inetAddress != null) return inetAddress;
+    public SimpleAddress getHostAddress() {
+        if (address != null) return address;
 
         MemorySegment sockaddr_in_local = arena.allocate(16, 2);
         MemorySegment sock_addr_size = arena.allocate(JAVA_INT, (int) sockaddr_in_local.byteSize());
@@ -65,7 +65,7 @@ public class SocketServer {
             if (sockNameRes == 0L) {
                 MemorySegment ipString = arena.allocate(16);
                 ffiHelper.callFunction("inet_ntop", ADDRESS, List.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS), List.of(AF_INET, sockaddr_in_local.asSlice(4), ipString, arena.allocate(JAVA_INT, 16)));
-                return inetAddress = InetAddress.ofLiteral(ipString.getString(0));
+                return address = SimpleAddress.ofLiteral(ipString.getString(0));
             } else {
                 ffiHelper.callFunction("perror", ADDRESS, List.of(ADDRESS) ,List.of(arena.allocateFrom("getsockname")));
                 throw new RuntimeException("Error getting host IP, reason above");

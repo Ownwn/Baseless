@@ -20,7 +20,7 @@ public class BaseHttpServer {
     private final SocketServer socket;
 
     public String getAddress() {
-        return socket.getHostInetAddress().getHostAddress();
+        return socket.getHostAddress().ip();
     }
 
     public static BaseHttpServer create(short port, Consumer<Request> handler) throws Throwable {

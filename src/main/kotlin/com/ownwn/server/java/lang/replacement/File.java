@@ -5,7 +5,6 @@ import com.ownwn.server.sockets.FFIHelper;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
-import java.util.Objects;
 
 public final class File {
     private final String path;
