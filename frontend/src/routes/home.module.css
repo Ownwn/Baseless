@@ -45,7 +45,6 @@
 }
 
 
-
 .dataButton {
     /*position: absolute;*/
     /*top: 50%;*/
@@ -137,6 +136,7 @@ ol {
     width: 100%;
     max-width: 100%;
 }
+
 .padding {
     padding: 40px;
 }

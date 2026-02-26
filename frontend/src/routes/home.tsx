@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import styles from "./home.module.css";
-import type { JSX } from "react/jsx-runtime";
+import type {JSX} from "react/jsx-runtime";
 
 type Entry = { name: string, plainText: boolean, content: string, createdAt: number, id: number }
 
@@ -88,7 +88,8 @@ export function Home() {
 
         if (!entry || entry.name === undefined || entry.content === undefined || entry.id === undefined) {
             if (entry.createdAt !== undefined && entry.id !== undefined) {
-                return <span><button onClick={() => deleteItem(entry)} className={styles.deleteButton}>Delete</button></span>
+                return <span><button onClick={() => deleteItem(entry)}
+                                     className={styles.deleteButton}>Delete</button></span>
             }
             return <p>Error formatting entry!</p>
         }
@@ -115,7 +116,8 @@ export function Home() {
                 if (errorMsg.length > 80) errorMsg = errorMsg.substring(0, 80)
                 return <>
                     {errorMsg}
-                    <span><button onClick={() => deleteItem(entry)} className={styles.deleteButton}>Delete</button></span>
+                    <span><button onClick={() => deleteItem(entry)}
+                                  className={styles.deleteButton}>Delete</button></span>
                 </>
             }
 
@@ -130,23 +132,28 @@ export function Home() {
 
             if (isImage(entry.name)) {
 
-                entryText = <><button className={styles.dataButton + " " + styles.bobby} id={"imageButton_" + entry.id + entry.createdAt} onClick={async () => {
-                    const url = await getDownloadUrl(created, fileNameBase64) as string
-                    const img = document.createElement("img")
+                entryText = <>
+                    <button className={styles.dataButton + " " + styles.bobby}
+                            id={"imageButton_" + entry.id + entry.createdAt} onClick={async () => {
+                        const url = await getDownloadUrl(created, fileNameBase64) as string
+                        const img = document.createElement("img")
 
-                    img.src = url
-                    img.alt = "image for " + entry.name
-                    img.width = 500
-                    img.height = 500
+                        img.src = url
+                        img.alt = "image for " + entry.name
+                        img.width = 500
+                        img.height = 500
 
-                    document.getElementById("imageButton_" + entry.id + entry.createdAt)?.replaceWith(img)
-                }}>View</button><>{entryText}</></>
+                        document.getElementById("imageButton_" + entry.id + entry.createdAt)?.replaceWith(img)
+                    }}>View
+                    </button>
+                    <>{entryText}</>
+                </>
             }
 
         }
         return <>
-        {entryText}
-        <span><button onClick={() => deleteItem(entry)} className={styles.deleteButton}>Delete</button></span>
+            {entryText}
+            <span><button onClick={() => deleteItem(entry)} className={styles.deleteButton}>Delete</button></span>
         </>
 
     }
@@ -159,7 +166,7 @@ export function Home() {
 
             const key = await getEncryptionKey(encryptionKey)
 
-            const blob = new Blob([await decryptData(bytes.buffer, key)], { type: "application/octet-stream" });
+            const blob = new Blob([await decryptData(bytes.buffer, key)], {type: "application/octet-stream"});
             return URL.createObjectURL(blob)
         } catch (e: any) {
             console.error(e)
@@ -231,10 +238,10 @@ export function Home() {
                     try {
                         const encryptedBuffer = base64ToArrayBuffer(entry.content);
                         const decryptedBuffer = await decryptData(encryptedBuffer, key);
-                        return { ...entry, content: new TextDecoder().decode(decryptedBuffer) };
+                        return {...entry, content: new TextDecoder().decode(decryptedBuffer)};
                     } catch (err) {
                         console.error("Error decrypting", err);
-                        return { ...entry, content: "???" };
+                        return {...entry, content: "???"};
                     }
                 })
             );
@@ -255,7 +262,7 @@ function trimToFit(str: string, len: number) {
     return str.substring(0, len) + "..."
 }
 
-function GreetingForm({ fetchItems, setStatus, encryptionKey}) {
+function GreetingForm({fetchItems, setStatus, encryptionKey}) {
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -304,7 +311,6 @@ function GreetingForm({ fetchItems, setStatus, encryptionKey}) {
             window.location.replace("api/login")
             return;
         }
-
 
 
         if (!res.ok) {
@@ -356,8 +362,6 @@ function getValue() {
 }
 
 
-/** Below here is AI slop. Crypto's gotta be the safest thing to vibe code right? */
-
 async function getEncryptionKey(password: string): Promise<CryptoKey> {
     const encoder = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey(
@@ -376,7 +380,7 @@ async function getEncryptionKey(password: string): Promise<CryptoKey> {
             hash: "SHA-256"
         },
         keyMaterial,
-        { name: "AES-CTR", length: 256 },
+        {name: "AES-CTR", length: 256},
         false,
         ["encrypt", "decrypt"]
     );
@@ -388,9 +392,9 @@ async function encryptDataToBase64(data: ArrayBuffer, key: CryptoKey): Promise<s
 
     let string = ""
 
-    for (let i = 0; i < uint8Array.length; i+= 30000) {
-        const slice = uint8Array.subarray(i, Math.min(i+30000, uint8Array.length))
-        string+= String.fromCharCode(...slice)
+    for (let i = 0; i < uint8Array.length; i += 30000) {
+        const slice = uint8Array.subarray(i, Math.min(i + 30000, uint8Array.length))
+        string += String.fromCharCode(...slice)
     }
     return btoa(string);
 }
@@ -404,13 +408,13 @@ async function decryptData(encryptedBuffer: ArrayBuffer, key: CryptoKey): Promis
 
     const datas = []
 
-    for (let i = 0; i < data.byteLength; i+= 128_000_000) {
+    for (let i = 0; i < data.byteLength; i += 128_000_000) {
         const encryptedData = await crypto.subtle.encrypt(
-            { name: "AES-CTR", counter: iv, length: 64 },
+            {name: "AES-CTR", counter: iv, length: 64},
             key,
-            data.slice(i, i+128_000_000)
+            data.slice(i, i + 128_000_000)
         );
-        iv[iv.length-1]++
+        iv[iv.length - 1]++
 
         datas.push(encryptedData)
     }
@@ -420,7 +424,7 @@ async function decryptData(encryptedBuffer: ArrayBuffer, key: CryptoKey): Promis
 
     for (const chunk of datas) {
         result.set(new Uint8Array(chunk), prev)
-        prev+= chunk.byteLength
+        prev += chunk.byteLength
     }
 
     return result.buffer;
@@ -428,20 +432,17 @@ async function decryptData(encryptedBuffer: ArrayBuffer, key: CryptoKey): Promis
 
 async function encryptData(data: ArrayBuffer, key: CryptoKey): Promise<ArrayBuffer> {
     const iv = crypto.getRandomValues(new Uint8Array(16));
-
-    // const numChunks = Math.floor(1 + data.byteLength / 128_000_000) // 1MB per chunk
-
     const datas = []
 
     const staleIV = new Uint8Array(iv);
 
-    for (let i = 0; i < data.byteLength; i+= 128_000_000) {
+    for (let i = 0; i < data.byteLength; i += 128_000_000) {
         const encryptedData = await crypto.subtle.encrypt(
-            { name: "AES-CTR", counter: iv, length: 64 },
+            {name: "AES-CTR", counter: iv, length: 64},
             key,
-            data.slice(i, i+128_000_000)
+            data.slice(i, i + 128_000_000)
         );
-        iv[iv.length-1]++
+        iv[iv.length - 1]++
 
         datas.push(encryptedData)
     }
@@ -452,7 +453,7 @@ async function encryptData(data: ArrayBuffer, key: CryptoKey): Promise<ArrayBuff
 
     for (const chunk of datas) {
         result.set(new Uint8Array(chunk), prev)
-        prev+= chunk.byteLength
+        prev += chunk.byteLength
     }
 
     return result.buffer;
