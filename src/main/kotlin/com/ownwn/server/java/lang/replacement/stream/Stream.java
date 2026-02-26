@@ -3,8 +3,6 @@ package com.ownwn.server.java.lang.replacement.stream;
 import com.ownwn.server.java.lang.replacement.*;
 import com.ownwn.server.java.lang.replacement.function.*;
 
-import java.util.stream.Collector;
-
 public class Stream<T> {
     protected List<T> underlying;
 
@@ -181,10 +179,6 @@ public class Stream<T> {
     public Optional<T> findAny() {
         if (underlying.isEmpty()) return Optional.empty();
         return Optional.of(underlying.getFirst());
-    }
-
-    public String collect(Object o) {
-        throw new Error("NYI");
     }
 
     

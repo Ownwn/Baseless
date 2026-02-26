@@ -34,7 +34,7 @@ public class FFIHelper {
         FunctionDescriptor fd = FunctionDescriptor.of(returnType, types.toArray(new MemoryLayout[types.size()]));
 
         var mh = linker.downcallHandle(function_addr, fd);
-        return mh.invokeWithArguments(args);
+        return mh.invokeWithArguments(args.toArray(new Object[0]));
     }
 
     public <T extends MemoryLayout> Object callIntFunction(String name, T returnType, List<Integer> args) throws Throwable { // todo unnecessary copy constructor
