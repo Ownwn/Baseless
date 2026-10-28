@@ -9,7 +9,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 const val loginPath: String = "/login"
-const val cookieName: String = ""
+const val cookieName: String = "COOKIE_VALUE"
 
 class Auth {
     @Intercept

@@ -30,6 +30,7 @@ private object Env2 {
 
         val lines = Files.readAllLines(envPath)
         for (line in lines) {
+            if (line.isBlank()) continue
             if (!line.matches(Regex("^[^=]+=[^=]+$"))) { // foo=bar
                 throw RuntimeException("Bad env line $line")
             }
