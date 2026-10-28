@@ -14,7 +14,6 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
 *.iws
 *.ipr
 
@@ -56,7 +55,15 @@ frontend/*.njsproj
 frontend/*.sln
 frontend/*.sw?
 
-.idea/
+# IntelliJ: commit the project model, ignore per-user state
+.idea/*
+!.idea/modules.xml
+!.idea/misc.xml
+!.idea/libraries/
+!.idea/libraries/*.xml
+!.idea/runConfigurations/
+!.idea/runConfigurations/*.xml
+
 data/
 
 # WHY IS THIS NOT DEFAULT??
@@ -64,12 +71,7 @@ data/
 out/
 app.jar
 handle.java
-!Baseless.iml
-!.idea/
-.idea/*
-!.idea/libraries/
-.idea/libraries/*
-!.idea/libraries/KotlinJavaRuntime.xml
 
 *.iml
+!Baseless.iml
 
