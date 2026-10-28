@@ -15,6 +15,24 @@ designed for when you don't particularly trust the server
 ---
 
 
+## Setup
+
+Install **NEW** versions of java/javac, kotlin/kotlinc, npm and nodejs, and make sure they're on your path.
+I suggest (I recommend sdkman on a non-rolling distro like ubuntu)
+
+run `echo PORT=32000 >> .env`
+
+run `cd frontend && npm i`
+
+run `make jar`
+
+Then you can run the server with `run.sh`, in a systemd unit etc
+
+
+
+---
+
+
 ## Learning experiences
 
 - Java foreign memory & function access.
@@ -23,3 +41,4 @@ designed for when you don't particularly trust the server
 - Regex engine/matching
 - A good refresher on libc for sockets, and how structs are stored in memory (padding etc)
 - Java shared thread access on arenas
+
