@@ -30,6 +30,13 @@ public abstract class Request {
         this.queryParameters = queryParameters;
     }
 
+    public static GetRequest getRequest(SimpleAddress remoteAddress, InputStream requestBody, Headers requestHeaders, OutputStream responseBody, String path, Map<String, String> cookies, Map<String, String> queryParameters) {
+        return new GetRequest(remoteAddress, requestBody, requestHeaders, responseBody, path, cookies, queryParameters);
+    }
+    public static PostRequest postRequest(SimpleAddress remoteAddress, InputStream requestBody, Headers requestHeaders, OutputStream responseBody, String path, Map<String, String> cookies, Map<String, String> queryParameters) {
+        return new PostRequest(remoteAddress, requestBody, requestHeaders, responseBody, path, cookies, queryParameters);
+    }
+
     private Map<String, String> parseQueries(String query) {
         if (query == null || query.isBlank()) return Map.of();
 
@@ -83,17 +90,21 @@ public abstract class Request {
         sendResponse(404, new Headers(), body);
     }
 
+    public static String getHttpMessageFromCode(int status) {
+        return "HTTP/1.1 " + status + " " + switch (status) {
+            case 200 -> "OK";
+            case 404 -> "Not Found";
+            case 401 -> "Unauthorised";
+            case 400 -> "Bad Request";
+            case 505 -> "HTTP Version Not Supported";
+            default -> "NYI";
+        };
+    }
+
     public void sendResponse(int status, Headers headers, InputStream body) {
         try {
-            String httpMsg = "HTTP/1.1 " + status + " " + switch (status) {
-                case 200 -> "OK";
-                case 404 -> "Not Found";
-                case 401 -> "Unauthorised";
-                default -> "NYI";
-            };
 
-
-            responseBody.write(httpMsg.getBytes(StandardCharsets.UTF_8));
+            responseBody.write(getHttpMessageFromCode(status).getBytes(StandardCharsets.UTF_8));
 
 
             for (var header : headers.entrySet()) {

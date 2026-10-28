@@ -71,9 +71,12 @@ public class BaseHttpServer {
             String requestMethod = rawHeaders.removeFirst();
             String[] requestParts = requestMethod.split(" ");
             HttpMethod method = HttpMethod.fromString(requestParts[0]);
-            if (!requestMethod.endsWith("HTTP/1.1") || requestParts.length != 3 || method == null) {
-                // todo malformed response
-                return null;
+
+            if (!requestMethod.endsWith("HTTP/1.1") && !requestMethod.endsWith("HTTP/1.0")) {
+                throw new RuntimeException("Bad HTTP version");
+            }
+            if (requestParts.length != 3 || method == null) {
+                throw new RuntimeException("Malformed request");
             }
 
             String requestPath = requestParts[1];
@@ -86,9 +89,9 @@ public class BaseHttpServer {
 
 
             if (method == HttpMethod.GET) {
-                return new GetRequest(client.getInetAddress(), s, headers, client.getOutputStream(arena), requestPath, cookies, requestParams);
+                return Request.getRequest(client.getInetAddress(), s, headers, client.getOutputStream(arena), requestPath, cookies, requestParams);
             } else if (method == HttpMethod.POST) {
-                return new PostRequest(client.getInetAddress(), s, headers, client.getOutputStream(arena), requestPath, cookies, requestParams);
+                return Request.postRequest(client.getInetAddress(), s, headers, client.getOutputStream(arena), requestPath, cookies, requestParams);
             } else {
                 return new GetRequest(client.getInetAddress(), s, headers, client.getOutputStream(arena), requestPath, cookies, requestParams);
                 // todo
