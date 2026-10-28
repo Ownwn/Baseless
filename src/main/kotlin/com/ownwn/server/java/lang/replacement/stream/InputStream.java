@@ -31,4 +31,18 @@ public interface InputStream {
 
         return transferred;
     }
+
+    default java.io.InputStream java() {
+        return new java.io.InputStream() {
+            @Override
+            public int read() throws IOException {
+                return InputStream.this.read();
+            }
+
+            @Override
+            public long transferTo(java.io.OutputStream out) throws IOException {
+                return super.transferTo(out);
+            }
+        };
+    }
 }

@@ -8,8 +8,6 @@ import com.ownwn.server.response.Response
 import com.ownwn.server.response.TemplateResponse
 import com.ownwn.server.response.WholeBodyResponse
 import java.util.*
-import kotlin.collections.getOrNull
-import kotlin.collections.isNullOrEmpty
 
 
 class Controller {
@@ -20,28 +18,17 @@ class Controller {
 
     @Handle("submit", method = HttpMethod.POST)
     fun submit(request: PostRequest): Response {
-        val formData = request.loadFormData() ?: return WholeBodyResponse.badRequest()
-        val text = formData["text"]?.java()?.getOrNull(0)
-        val files = formData["file"]
 
-        if (text?.bytes()?.isNotEmpty() != true && formData["file"]?.java().isNullOrEmpty()) {
+        val iterator = request.formDataIterator() ?: return WholeBodyResponse.badRequest()
+
+        if (!iterator.hasNext()) {
             return WholeBodyResponse.badRequest("missing attachments")
         }
 
-        text?.bytes()?.let { Database.addEntry(it) }
-
-        if (!files?.java().isNullOrEmpty()) {
-            for (file in files) {
-                if (file == null || file.bytes().isEmpty()) continue
-
-                try {
-                    Database.addEntry(file.bytes(), file.fileName())
-                } catch (e: Exception) {
-                    return WholeBodyResponse.badRequest(e.message)
-                }
-            }
+        while (iterator.hasNext()) {
+            val fileOrText = iterator.next();
+            Database.addEntry(fileOrText.bytes().java(), if (fileOrText.type == "text") null else fileOrText.fileName)
         }
-
 
         return WholeBodyResponse.ok()
     }

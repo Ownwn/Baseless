@@ -1,3 +1,5 @@
 package com.ownwn.server;
 
-public record FormAttachment(String type, String fileName, byte[] bytes) {}
+import com.ownwn.server.java.lang.replacement.stream.InputStream;
+
+public record FormAttachment(String type, String fileName, InputStream bytes) {}

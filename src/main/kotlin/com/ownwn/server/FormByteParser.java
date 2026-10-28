@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 public class FormByteParser {
     private static final Pattern dispositionPattern = Pattern.compile("Content-Disposition: form-data; name=\"([^\"]+)\"(?:; filename=\"([^\"]+)\")?");
 
-    private byte[] bytes;
+    private InputStream bytes;
     private final String boundary;
     private int boundaryIndex = 0;
     private List<Chunk> chunks;
@@ -25,17 +25,7 @@ public class FormByteParser {
 
     public FormByteParser(InputStream body, String boundary, int contentLength) {
         this.boundary = boundary;
-        try {
-            this.bytes = new byte[contentLength];
-            if (body.readNBytes(this.bytes, 0, contentLength) < contentLength) {
-                throw new IOException("didn't read all the bytes"); // code smell? definitely
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            chunks = List.of();
-            return;
-        }
-
+        this.bytes = body;
 
         List<byte[]> rawParts;
         try {
@@ -58,7 +48,7 @@ public class FormByteParser {
                 .toList();
     }
 
-    public Map<String, List<FormAttachment>> getTypeGroups() {
+    public List<FormAttachment> getAttachments() {
         return chunks.stream().collect(HashMap::new, (map, chunk) -> {
 
             String[] contentHeaders = chunk.disposition.trim().split("\r\n");

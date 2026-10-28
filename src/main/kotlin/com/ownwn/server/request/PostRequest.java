@@ -17,7 +17,7 @@ public class PostRequest extends Request {
     private static final Pattern formBoundaryPattern = Pattern.compile("^\\s*multipart/form-data;\\s*boundary=(.+)\\s*$");
 
     private String multiPartFormBoundary = null;
-    private Map<String, List<FormAttachment>> formData = null;
+    private Iterator<FormAttachment> formAttachments = null;
 
 
     public PostRequest(SimpleAddress remoteAddress, InputStream requestBody, Headers requestHeaders,
@@ -34,19 +34,31 @@ public class PostRequest extends Request {
         return HttpMethod.POST;
     }
 
-    public java.util.Map<String, List<FormAttachment>> loadFormData() {
+    public java.util.Iterator<FormAttachment> formDataIterator() {
         if (multiPartFormBoundary == null) return null;
-        if (formData != null) return formData.java();
+        if (formAttachments != null) return formAttachments.java();
         int contentLength;
         try {
             contentLength = Integer.parseUnsignedInt(requestHeaders().get("Content-Length").trim());
         } catch (Exception e) {
-            return null;
+            return Iterator.<FormAttachment>empty().java();
         }
 
+
         FormByteParser parser = new FormByteParser(requestBody, multiPartFormBoundary, contentLength);
-        formData = parser.getTypeGroups();
-        return formData.java();
+        return new java.util.Iterator<FormAttachment>() {
+            @Override
+            public boolean hasNext() {
+                parser.
+            }
+
+            @Override
+            public FormAttachment next() {
+                return null;
+            }
+        }
+        formAttachments = parser.getAttachments();
+        return formAttachments.java();
     }
 
     private String tryParseMultiPartFormBoundary() {
