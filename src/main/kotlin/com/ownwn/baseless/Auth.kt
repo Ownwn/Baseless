@@ -9,7 +9,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 const val loginPath: String = "/login"
-const val cookieName: String = "COOKIE_VALUE"
+const val cookieName: String = ""
 
 class Auth {
     @Intercept
@@ -24,7 +24,7 @@ class Auth {
         }
 
         val cookieValue = BaselessApplication.getEnv(cookieName) ?: run {
-            System.err.println("Missing cookie value!")
+            System.err.println("Missing cookie value from .env! this should've been inited in in startup")
             interceptor.closeWithResponse(WholeBodyResponse.unauthorised())
             return
         }

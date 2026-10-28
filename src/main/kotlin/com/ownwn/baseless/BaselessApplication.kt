@@ -14,8 +14,8 @@ class BaselessApplication {
 }
 
 fun main() {
-    loadEnv()
-    val port = BaselessApplication.getEnv("PORT")?.toShort() ?: throw RuntimeException("Missing port .env")
+    loadEnv(listOf("PORT", "COOKIE_VALUE"))
+    val port = BaselessApplication.getEnv("PORT")!!.toShort()
     Server.create("/api", port)
 }
 
@@ -23,7 +23,7 @@ private object Env2 {
     private val envPath = Path.of(".env")
     val envs = mutableMapOf<String, String>()
 
-    fun loadEnv() {
+    fun loadEnv(neededFields: List<String>) {
         if (!Files.exists(envPath)) {
             throw RuntimeException("Missing .env at ${envPath.toAbsolutePath()}")
         }
@@ -40,6 +40,11 @@ private object Env2 {
             }
             val hasQuotes: Boolean = pair[1].startsWith("\"") && pair[1].endsWith("\"")
             envs[pair[0]] = if (hasQuotes) pair[1].substring(1, pair[1].length-1) else pair[1]
+        }
+        for (field in neededFields) {
+            if (!envs.containsKey(field)) {
+                throw RuntimeException("Missing field $field in .env")
+            }
         }
     }
 }
