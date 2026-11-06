@@ -7,7 +7,6 @@ import com.ownwn.server.request.Request;
 import com.ownwn.server.response.Response;
 import com.ownwn.server.response.TemplateResponse;
 
-import java.io.IOException;
 
 public class Server {
     private final Map<String, RequestHandler> handleMethods = new HashMap<>();

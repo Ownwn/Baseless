@@ -5,7 +5,6 @@ import com.ownwn.server.java.lang.replacement.*;
 import com.ownwn.server.java.lang.replacement.stream.ByteArrayInputStream;
 import com.ownwn.server.java.lang.replacement.stream.InputStream;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public class TemplateResponse extends Response {
