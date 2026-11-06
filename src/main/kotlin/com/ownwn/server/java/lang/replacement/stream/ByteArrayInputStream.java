@@ -1,6 +1,7 @@
 package com.ownwn.server.java.lang.replacement.stream;
 
-import java.io.IOException;
+
+import com.ownwn.server.java.lang.replacement.IOException;
 
 public final class ByteArrayInputStream implements InputStream {
     private int i = 0;

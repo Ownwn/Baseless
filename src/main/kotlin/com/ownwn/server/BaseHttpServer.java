@@ -9,7 +9,6 @@ import com.ownwn.server.request.Request;
 import com.ownwn.server.sockets.Client;
 import com.ownwn.server.sockets.SocketServer;
 
-import java.io.IOException;
 import java.lang.foreign.*;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
@@ -101,8 +100,13 @@ public class BaseHttpServer {
 
 
         } catch (Exception e) {
-            client.getOutputStream(arena).write("HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.UTF_8));
-            client.getOutputStream(arena).close();
+            try {
+                client.getOutputStream(arena).write("HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream(arena).close();
+            } catch (IOException ex) {
+                // ignored
+            }
+
             throw new RuntimeException(e);
         }
     }
