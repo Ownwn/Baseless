@@ -2,10 +2,10 @@ package com.ownwn.server;
 
 import com.ownwn.server.java.lang.replacement.*;
 import com.ownwn.server.java.lang.replacement.function.*;
+import com.ownwn.server.java.lang.replacement.stream.BufferedOutputStream;
 import com.ownwn.server.java.lang.replacement.stream.InputStream;
+import com.ownwn.server.java.lang.replacement.stream.OutputStream;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
@@ -19,7 +19,7 @@ public class FormAttachmentHandler {
 
     public void consumeAttachments(Function<FormAttachment, java.io.OutputStream> attachmentHandler) throws IOException {
         class Writer implements PartConsumer, AutoCloseable {
-            private java.io.OutputStream output;
+            private OutputStream output;
 
             public void start(Headers headers) {
                 var dispositionMatcher = dispositionPattern.matcher(headers.get("Content-Disposition"));
@@ -32,7 +32,8 @@ public class FormAttachmentHandler {
                 } else {
                     attachment = new FormAttachment("file", dispositionMatcher.group(2));
                 }
-                output = new BufferedOutputStream(Objects.requireNonNull(attachmentHandler.apply(attachment)), chunkSize);
+                var outputStream = OutputStream.fromJava(attachmentHandler.apply(attachment));
+                output = new BufferedOutputStream(Objects.requireNonNull(outputStream), chunkSize);
             }
 
             public void write(byte value) throws IOException {

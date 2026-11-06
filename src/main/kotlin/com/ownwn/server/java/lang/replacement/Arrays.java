@@ -12,6 +12,12 @@ public class Arrays {
         return res;
     }
 
+    public static void copyFrom(byte[] origin, int startPos, byte[] destination, int destPos, int length) {
+        for (int i = 0; i < length; i++) {
+            destination[i + destPos] = origin[i + startPos];
+        }
+    }
+
     public static byte[] copyOfRange(byte[] original, int from, int to) {
         int range = to-from;
         byte[] res = new byte[range];

@@ -1,6 +1,5 @@
 package com.ownwn.server.sockets;
 
-import java.io.IOException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import com.ownwn.server.java.lang.replacement.*;
