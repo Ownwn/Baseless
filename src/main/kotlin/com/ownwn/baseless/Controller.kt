@@ -19,15 +19,12 @@ class Controller {
     @Handle("submit", method = HttpMethod.POST)
     fun submit(request: PostRequest): Response {
 
-        val iterator = request.formDataIterator() ?: return WholeBodyResponse.badRequest()
+        val attachments = request.formAttachmentHandler() ?: return WholeBodyResponse.badRequest()
 
-        if (!iterator.hasNext()) {
-            return WholeBodyResponse.badRequest("missing attachments")
-        }
-
-        while (iterator.hasNext()) {
-            val fileOrText = iterator.next();
-            Database.addEntry(fileOrText.bytes().java(), if (fileOrText.type == "text") null else fileOrText.fileName)
+        attachments.consumeAttachments { attachment ->
+            val target = Database.dataRoot.resolve(Database.createFileName(attachment.fileName()))
+            target.createNewFile()
+            target.outputStream()
         }
 
         return WholeBodyResponse.ok()

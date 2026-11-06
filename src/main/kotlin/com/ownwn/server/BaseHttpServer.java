@@ -12,6 +12,7 @@ import com.ownwn.server.sockets.SocketServer;
 import java.io.IOException;
 import java.lang.foreign.*;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -99,7 +100,9 @@ public class BaseHttpServer {
 
 
 
-        } catch (IOException e) {
+        } catch (Exception e) {
+            client.getOutputStream(arena).write("HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+            client.getOutputStream(arena).close();
             throw new RuntimeException(e);
         }
     }

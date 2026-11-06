@@ -5,7 +5,7 @@ import com.ownwn.server.java.lang.replacement.stream.Collector;
 
 public class Collectors {
 
-    public static Collector<CharSequence, StringBuilder, String> joining(String del, String prefix, String suffix) {
+    public static <T> Collector<T, StringBuilder, String> joining(String del, String prefix, String suffix) {
         return new Collector<>() {
             @Override
             public Supplier<StringBuilder> supplier() {
@@ -13,7 +13,7 @@ public class Collectors {
             }
 
             @Override
-            public BiConsumer<StringBuilder, CharSequence> accumulator() {
+            public BiConsumer<StringBuilder, T> accumulator() {
                 return (sb, cs) -> {
                     if (!sb.isEmpty()) sb.append(del);
                     sb.append(cs);
@@ -35,7 +35,7 @@ public class Collectors {
             }
         };
     }
-    public static Collector<CharSequence, StringBuilder, String> joining(String del) {
+    public static <T> Collector<T, StringBuilder, String> joining(String del) {
         return joining(del, "", "");
     }
 
