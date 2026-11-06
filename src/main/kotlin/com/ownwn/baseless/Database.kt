@@ -1,7 +1,9 @@
 package com.ownwn.baseless
 
 import com.ownwn.server.JsonConvertible
+import java.awt.SystemColor.text
 import java.io.File
+import java.io.InputStream
 import java.util.*
 
 object Database {
@@ -10,26 +12,13 @@ object Database {
     init {
         if (!dataRoot.exists()) dataRoot.mkdir()
     }
-
-    fun addEntry(content: ByteArray) {
+    fun addEntry(stream: InputStream, name: String?) {
         dataRoot.mkdir()
 
-        val file = dataRoot.resolve(createFileName(null))
-
+        val file = dataRoot.resolve(createFileName(name))
         if (file.exists()) throw RuntimeException("File $file already exists!")
-        file.outputStream().write(content)
 
-    }
-
-    @Throws(Exception::class)
-    fun addEntry(fileBytes: ByteArray, fileName: String?) {
-        dataRoot.mkdir()
-        fileName ?: throw RuntimeException("Bad file name")
-
-        val filePath = dataRoot.resolve(createFileName(fileName))
-
-        if (filePath.exists()) throw RuntimeException("File $filePath already exists!")
-        filePath.outputStream().write(fileBytes)
+        stream.transferTo(file.outputStream())
     }
 
     fun createFileName(fileName: String?): String {
