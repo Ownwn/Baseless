@@ -19,6 +19,12 @@ run: jar
 	cd frontend && npm run build && npm run deploy &
 	kotlin -cp app.jar $(MAIN)
 
+pull:
+	curl -O -fsSL 'https://nightly.link/Ownwn/Baseless/workflows/makefile/main/app.zip'
+
+	unzip -o app.zip
+	rm -f app.zip
+
 .PHONY: test
 
 # HTTP checks use in-memory clients; curl checks start an isolated fixture server.
