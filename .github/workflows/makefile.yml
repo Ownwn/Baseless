@@ -32,3 +32,10 @@ jobs:
 
       - name: Build JAR
         run: make jar
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v7
+        with:
+          name: app
+          path: app.jar
+          if-no-files-found: error
