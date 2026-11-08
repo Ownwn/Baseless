@@ -343,7 +343,7 @@ function GreetingForm({fetchItems, setStatus, encryptionKey}) {
 function EncryptionStatus({encryptionKey, setEncryptionKey}) {
     return <>
         <div className={styles.encryptionBox}>
-            <p>{encryptionKey.length === 0 ? "Please set your encryption key below" : "Clear your cookies or visit <thisdomain>/api/clearcookieto change your encryption key"}</p>
+            <p>{encryptionKey.length === 0 ? "Please set your encryption key below" : "Clear your cookies or visit <thisdomain>/api/clearcookie to remove your encryption key"}</p>
             <br/>
             {encryptionKey.length !== 0 ? <></> :
                 <>
