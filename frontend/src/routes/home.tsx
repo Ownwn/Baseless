@@ -30,7 +30,7 @@ export function Home() {
 
     useEffect(() => {
         if (encryptionKey.length !== 0) {
-            document.cookie = "encodedEncryption=" + String(encryptionKey) + "; max-age=" + String(60 * 60 * 24 * 365)
+            localStorage.setItem("newencryption", String(encryptionKey))
             fetchItems()
         }
     }, [encryptionKey]);
@@ -41,11 +41,8 @@ export function Home() {
             return
         }
 
-        const encryption = document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("encodedEncryption="))
-            ?.split("=")[1];
-        if (encryption !== undefined) {
+        const encryption = localStorage.getItem("newencryption")
+        if (encryption !== undefined && encryption !== null) {
             setEncryptionKey(encryption)
         }
     }, []);

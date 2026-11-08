@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <body>
-<button style="width: 300px; height: 100px;" type="button" onclick="clearCookie()">clear cookies</button>
+<button style="width: 300px; height: 100px;" type="button" onclick="clearCookie()">clear cookies/session</button>
 </body>
 
 <script>
     function clearCookie() {
+        localStorage.removeItem("newencryption")
         document.cookie = "encodedEncryption=;"
     }
 
