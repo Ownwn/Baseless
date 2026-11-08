@@ -12,20 +12,19 @@ object Database {
     init {
         if (!dataRoot.exists()) dataRoot.mkdir()
     }
-    fun addEntry(stream: InputStream, name: String?) {
-        dataRoot.mkdir()
-
-        val file = dataRoot.resolve(createFileName(name))
-        if (file.exists()) throw RuntimeException("File $file already exists!")
-
-        stream.transferTo(file.outputStream())
-    }
 
     fun createFileName(fileName: String?): String {
         val randomId = (1000.. (1 shl 30)).random()
         val fileNameEncoded = Base64.getUrlEncoder().encodeToString((fileName ?: "TEXT").toByteArray(
             Charsets.UTF_8))
         return "${if (fileName == null) "TEXT" else "FILE"}|${System.currentTimeMillis()}|$randomId|$fileNameEncoded"
+    }
+
+    fun createPlaintextFileName(fileName: String?): String {
+        val randomId = (1000.. (1 shl 30)).random()
+        val fileNameEncoded = Base64.getUrlEncoder().encodeToString((fileName ?: "PLAINTEXT").toByteArray(
+            Charsets.UTF_8))
+        return "${if (fileName == null) "PLAINTEXT" else "PLAINFILE"}|${System.currentTimeMillis()}|$randomId|$fileNameEncoded"
     }
 
     fun deleteEntry(createdAt: Long, id: Int): Boolean {
@@ -53,14 +52,14 @@ object Database {
 }
 
 @ConsistentCopyVisibility
-data class Entry private constructor(val name: String, val plainText: Boolean, val content: String, val createdAt: Long, val id: Int) : JsonConvertible {
+data class Entry private constructor(val name: String, val plainText: Boolean, val content: String, val createdAt: Long, val id: Int, val isUnencrypted: Boolean) : JsonConvertible {
     override fun toJson(): String {
-        return "{\"name\": \"$name\", \"plainText\": $plainText, \"content\": \"$content\", \"createdAt\": $createdAt, \"id\": $id}"
+        return "{\"name\": \"$name\", \"plainText\": $plainText, \"content\": \"$content\", \"createdAt\": $createdAt, \"id\": $id, \"isUnencrypted\": $isUnencrypted}"
     }
 
     companion object {
         fun createEntry(f: File): Entry? {
-            if (!f.name.startsWith("TEXT") && !f.name.startsWith("FILE")) {
+            if (!f.name.startsWith("PLAIN") && !f.name.startsWith("TEXT") && !f.name.startsWith("FILE")) {
                 return null
             }
 
@@ -74,12 +73,12 @@ data class Entry private constructor(val name: String, val plainText: Boolean, v
             val randomId = parts[2].toInt()
 
 
-            val plainText = f.name.startsWith("TEXT")
+            val plainText = parts[0].endsWith("TEXT")
             if (plainText) {
-                return Entry(name, true, f.readText(), created, randomId)
+                return Entry(name, true, f.readText(), created, randomId, parts[0].startsWith("PLAIN"))
             }
 
-            return Entry(name, false, "FILE", created, randomId)
+            return Entry(name, false, "FILE", created, randomId, parts[0].startsWith("PLAIN"))
         }
     }
 }

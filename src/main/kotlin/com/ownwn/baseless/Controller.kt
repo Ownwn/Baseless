@@ -40,7 +40,7 @@ class Controller {
             return WholeBodyResponse.badRequest("too big")
         }
         attachments.consumeAttachments { attachment ->
-            val target = Database.dataRoot.resolve(Database.createFileName(attachment.fileName()))
+            val target = Database.dataRoot.resolve(Database.createPlaintextFileName(attachment.fileName()))
             target.createNewFile()
             target.outputStream()
         }

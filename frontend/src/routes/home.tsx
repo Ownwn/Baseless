@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import styles from "./home.module.css";
 import type {JSX} from "react/jsx-runtime";
 
-type Entry = { name: string, plainText: boolean, content: string, createdAt: number, id: number }
+type Entry = { name: string, plainText: boolean, content: string, createdAt: number, id: number, isUnencrypted: boolean}
 
 export function Home() {
     const [items, setItems] = useState<Entry[]>([
@@ -119,7 +119,7 @@ export function Home() {
             }
 
             entryText = <button type="button" className={styles.dataButton} onClick={async () => {
-                const url = await getDownloadUrl(created, fileNameBase64) as string
+                const url = await getDownloadUrl(created, fileNameBase64, entry.isUnencrypted) as string
                 const a = document.createElement("a")
                 a.href = url
                 a.download = entry.name
@@ -132,7 +132,7 @@ export function Home() {
                 entryText = <>
                     <button className={styles.dataButton + " " + styles.bobby}
                             id={"imageButton_" + entry.id + entry.createdAt} onClick={async () => {
-                        const url = await getDownloadUrl(created, fileNameBase64) as string
+                        const url = await getDownloadUrl(created, fileNameBase64, entry.isUnencrypted) as string
                         const img = document.createElement("img")
 
                         img.src = url
@@ -159,11 +159,15 @@ export function Home() {
 
     }
 
-    async function getDownloadUrl(created: string, fileNameBase64: string) {
+    async function getDownloadUrl(created: string, fileNameBase64: string, isUnencrypted: boolean) {
         try {
             const res = await fetch("api/downloadfile" + "?created=" + created + "&filename=" + fileNameBase64)
 
             const bytes = await res.bytes()
+            if (isUnencrypted) {
+                const blob = new Blob([bytes.buffer], {type: "application/octet-stream"});
+                return URL.createObjectURL(blob)
+            }
 
             const key = await getEncryptionKey(encryptionKey)
 
@@ -232,7 +236,7 @@ export function Home() {
             const key = await getEncryptionKey(encryptionKey);
             const decryptedEntries: Entry[] = await Promise.all(
                 entries.map(async (entry: Entry) => {
-                    if (!entry.plainText) {
+                    if (!entry.plainText || entry.isUnencrypted) {
                         return entry
                     }
 
