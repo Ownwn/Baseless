@@ -18,3 +18,12 @@ jar: compile
 run: jar
 	cd frontend && npm run build && npm run deploy &
 	kotlin -cp app.jar $(MAIN)
+
+.PHONY: test
+
+# HTTP checks use in-memory clients; curl checks start an isolated fixture server.
+test: compile
+	mkdir -p out/test
+	javac -cp out -d out/test $$(find src/test/java -name '*.java')
+	java -cp out:out/test com.ownwn.server.HttpRegressionTests
+	python3 src/test/curl_http_tests.py

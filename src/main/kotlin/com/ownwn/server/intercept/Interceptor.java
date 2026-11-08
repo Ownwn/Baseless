@@ -4,6 +4,7 @@ import com.ownwn.server.HttpMethod;
 import com.ownwn.server.request.Request;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
 /** Acts like middleware, used to intercept requests before theyre routed */
@@ -21,7 +22,11 @@ public interface Interceptor {
             public void handle(Request request, InterceptReceiver interceptReceiver) {
                 try {
                     m.invoke(instance, request, interceptReceiver);
-                } catch (Exception e) {
+                } catch (InvocationTargetException e) {
+                    if (e.getCause() instanceof RuntimeException cause) throw cause;
+                    if (e.getCause() instanceof Error cause) throw cause;
+                    throw new RuntimeException(e.getCause());
+                } catch (ReflectiveOperationException e) {
                     throw new RuntimeException(e);
                 }
 

@@ -1,34 +1,38 @@
 package com.ownwn.server;
 
 import com.ownwn.server.java.lang.replacement.*;
-import com.ownwn.server.java.lang.replacement.function.Consumer;
-import com.ownwn.server.java.lang.replacement.stream.InputStream;
+import com.ownwn.server.java.lang.replacement.function.Function;
+import com.ownwn.server.java.lang.replacement.stream.OutputStream;
+import com.ownwn.server.request.DeleteRequest;
 import com.ownwn.server.request.GetRequest;
 import com.ownwn.server.request.PostRequest;
+import com.ownwn.server.response.Response;
+import com.ownwn.server.response.ResponseWriter;
+import com.ownwn.server.response.WholeBodyResponse;
+import com.ownwn.server.java.lang.replacement.stream.InputStream;
 import com.ownwn.server.request.Request;
 import com.ownwn.server.sockets.Client;
 import com.ownwn.server.sockets.SocketServer;
 
 import java.lang.foreign.*;
 import java.net.SocketTimeoutException;
-import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BaseHttpServer {
-    private final Pattern getRequestParamPattern = Pattern.compile("[?&]([^?=&]+)=([^?=&]+)"); // todo single responsibility principal?
+    private static final Pattern getRequestParamPattern = Pattern.compile("[?&]([^?=&]+)=([^?=&]+)");
     private final SocketServer socket;
 
     public String getAddress() {
         return socket.getHostAddress().ip();
     }
 
-    public static BaseHttpServer create(short port, Consumer<Request> handler) throws Throwable {
+    public static BaseHttpServer create(short port, Function<Request, Response> handler) throws Throwable {
         return new BaseHttpServer(port, handler);
     }
 
 
-    private BaseHttpServer(short port, Consumer<Request> handler) throws Throwable {
+    private BaseHttpServer(short port, Function<Request, Response> handler) throws Throwable {
         Arena arena = Arena.ofShared();
         socket = new SocketServer(port, arena);
 
@@ -44,8 +48,7 @@ public class BaseHttpServer {
 
                     Thread clientRequestHandlerThread = new Thread(() -> {
                         try (Arena clientArena = Arena.ofConfined()) {
-                            Request request = createRequest(client, clientArena);
-                            handler.accept(request);
+                            processClient(client, clientArena, handler);
                         }
                     });
                     clientRequestHandlerThread.start();
@@ -60,59 +63,65 @@ public class BaseHttpServer {
 
     }
 
-    private Request createRequest(Client client, Arena arena) {
+    // this is the only function that closes the socket
+    static void processClient(Client client, Arena arena, Function<Request, Response> handler) {
+        OutputStream output = client.getOutputStream(arena);
+        ResponseWriter writer = new ResponseWriter(output);
         try {
-            InputStream s = client.getInputStream(arena);
-
-            List<String> rawHeaders = getRawHeaders(s);
-            if (rawHeaders.isEmpty()) {
-                throw new RuntimeException("Bad HTTP request!"); // todo handle better
-            }
-            String requestMethod = rawHeaders.removeFirst();
-            String[] requestParts = requestMethod.split(" ");
-            HttpMethod method = HttpMethod.fromString(requestParts[0]);
-
-            if (!requestMethod.endsWith("HTTP/1.1") && !requestMethod.endsWith("HTTP/1.0")) {
-                throw new RuntimeException("Bad HTTP version");
-            }
-            if (requestParts.length != 3 || method == null) {
-                throw new RuntimeException("Malformed request");
-            }
-
-            String requestPath = requestParts[1];
-            Headers headers = Headers.fromRawList(rawHeaders);
-            Map<String, String> cookies = headers.getAndRemoveCookies();
-            StringBuilder newPath = new StringBuilder(requestPath);
-            Map<String, String> requestParams = getGetRequestParamsAndMutatePath(newPath);
-            requestPath = newPath.toString();
-
-
-
-            if (method == HttpMethod.GET) {
-                return Request.getRequest(client.getInetAddress(), s, headers, client.getOutputStream(arena), requestPath, cookies, requestParams);
-            } else if (method == HttpMethod.POST) {
-                return Request.postRequest(client.getInetAddress(), s, headers, client.getOutputStream(arena), requestPath, cookies, requestParams);
-            } else {
-                return new GetRequest(client.getInetAddress(), s, headers, client.getOutputStream(arena), requestPath, cookies, requestParams);
-                // todo
-            }
-
-
-
+            Request request = createRequest(client, arena, output);
+            writer = request.responseWriter();
+            Response response = handler.apply(request);
+            if (!writer.hasStarted()) writer.send(response);
         } catch (Exception e) {
-            try {
-                client.getOutputStream(arena).write("HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.UTF_8));
-                client.getOutputStream(arena).close();
-            } catch (IOException ex) {
-                // ignored
+            if (e instanceof HttpRequestException rejection) {
+                System.err.println("HTTP " + rejection.status() + ": " + rejection.getMessage());
+            } else {
+                e.printStackTrace();
             }
+            if (!writer.hasStarted()) {
+                int status = e instanceof HttpRequestException rejection ? rejection.status() : 500;
+                String message = e instanceof HttpRequestException ? e.getMessage() : "Internal Server Error";
+                try {
+                    writer.send(WholeBodyResponse.of(status, message));
+                } catch (Exception writeError) {
+                    writeError.printStackTrace();
+                }
+            }
+        } finally {
+            try { output.close(); } catch (Exception e) { e.printStackTrace(); }
+        }
+    }
 
-            throw new RuntimeException(e);
+    private static Request createRequest(Client client, Arena arena, OutputStream output) throws IOException {
+        InputStream input = client.getInputStream(arena);
+        List<String> rawHeaders = getRawHeaders(input);
+        if (rawHeaders.isEmpty()) throw new HttpRequestException(400, "Missing HTTP request line");
+        String[] parts = rawHeaders.removeFirst().split(" ", -1);
+        if (parts.length != 3 || parts[1].isEmpty()) {
+            throw new HttpRequestException(400, "Malformed HTTP request line");
+        }
+        HttpMethod method = HttpMethod.fromString(parts[0]);
+        if (method == null) throw new HttpRequestException(400, "Invalid HTTP method");
+        if (!parts[2].equals("HTTP/1.1") && !parts[2].equals("HTTP/1.0")) {
+            throw new HttpRequestException(505, "HTTP version not supported");
+        }
+        Headers headers = Headers.fromRawList(rawHeaders);
+        Map<String, String> cookies = headers.getAndRemoveCookies();
+        StringBuilder path = new StringBuilder(parts[1]);
+        Map<String, String> params = getGetRequestParamsAndMutatePath(path);
+        if (method == HttpMethod.POST) {
+            return new PostRequest(client.getInetAddress(), input, headers, output, path.toString(), cookies, params);
+        } else if (method == HttpMethod.DELETE) {
+            return new DeleteRequest(client.getInetAddress(), input, headers, output, path.toString(), cookies, params);
+        } else if (method == HttpMethod.GET) {
+            return new GetRequest(client.getInetAddress(), input, headers, output, path.toString(), cookies, params);
+        } else {
+            throw new HttpRequestException(405, "Unknown Method Type");
         }
     }
 
     /** Mutates {@code path} */
-    private Map<String, String> getGetRequestParamsAndMutatePath(StringBuilder path) {
+    private static Map<String, String> getGetRequestParamsAndMutatePath(StringBuilder path) {
         if (path.isEmpty() || path.toString().equals("/")) return Map.of();
         Map<String, String> params = new HashMap<>();
 
@@ -128,61 +137,24 @@ public class BaseHttpServer {
         return params;
     }
 
-    private List<String> getRawHeaders(InputStream inputStream) throws IOException {
-        List<String> headers = new ArrayList<>();
-        LineState state = LineState.NONE;
-        int b;
-        StringBuilder currentHeaderRaw = new StringBuilder(32);
-
-        while ((b = inputStream.read()) != -1) { // todo limit header length to reasonable strlen?
-            if (b == 13) {
-                if (state == LineState.NONE) state = LineState.SEEN_CR1;
-                else if (state == LineState.SEEN_LF1) state = LineState.SEEN_CR2;
-            } else if (b == 10) {
-                if (state == LineState.SEEN_CR1) {
-                    headers.add(currentHeaderRaw.substring(0, currentHeaderRaw.length()-1));
-                    currentHeaderRaw = new StringBuilder(32);
-                    state = LineState.SEEN_LF1;
-                    continue;
-                } else if (state == LineState.SEEN_CR2) {
-                    return headers;
-                }
+    private static List<String> getRawHeaders(InputStream input) throws IOException {
+        List<String> lines = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+        int total = 0;
+        while (true) {
+            int value = input.read();
+            if (value == -1) throw new HttpRequestException(400, "Incomplete HTTP headers");
+            if (++total > 16384) throw new HttpRequestException(431, "HTTP headers exceed 16 KB");
+            if (value == '\r') {
+                if (input.read() != '\n') throw new HttpRequestException(400, "Expected CRLF in HTTP headers");
+                if (++total > 16384) throw new HttpRequestException(431, "HTTP headers exceed 16 KB");
+                if (line.isEmpty()) return lines;
+                lines.add(line.toString());
+                line.setLength(0);
             } else {
-                state = LineState.NONE;
-            }
-            currentHeaderRaw.append((char) b);
-        }
-
-
-        return headers;
-    }
-
-    private String getRequestMethod(InputStream inputStream) throws IOException {
-        LineState state = LineState.NONE;
-        int b;
-//        byte[] bob = inputStream.readAllBytes();
-        StringBuilder method = new StringBuilder(1000); // todo bad?
-
-        while ((b = inputStream.read()) != -1) {
-            if (b == 10 && state == LineState.SEEN_CR1) { // new line
-                return method.toString();
-            }
-            if (b == 13) {
-                state = LineState.SEEN_CR1;
-            }
-            method.append((char) b);
-
-            if (method.length() > 50) {
-                break;
+                if (value == '\n') throw new HttpRequestException(400, "Expected CRLF in HTTP headers");
+                line.append((char) value);
             }
         }
-        return null; // todo malformed;
-
     }
-
-    enum LineState {
-        NONE, SEEN_CR1, SEEN_LF1, SEEN_CR2
-    }
-
-    record Pair<A,B>(A a, B b) {}
 }

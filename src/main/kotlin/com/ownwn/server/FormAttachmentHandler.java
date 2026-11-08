@@ -7,31 +7,28 @@ import com.ownwn.server.java.lang.replacement.stream.InputStream;
 import com.ownwn.server.java.lang.replacement.stream.OutputStream;
 
 import java.nio.charset.StandardCharsets;
-import java.util.regex.Pattern;
 
 public class FormAttachmentHandler {
-    private static final Pattern dispositionPattern = Pattern.compile("form-data; name=\"([^\"]+)\"(?:; filename=\"([^\"]+)\")?");
     private static final int chunkSize = 32768;
     private final InputStream body;
     private final int contentLength;
     private final byte[] boundary;
+    private boolean consumed;
 
 
     public void consumeAttachments(Function<FormAttachment, java.io.OutputStream> attachmentHandler) throws IOException {
+        if (consumed) throw new IllegalStateException("Multipart body has already been consumed");
+        consumed = true; // Also disallow retries after a failed or partial read.
         class Writer implements PartConsumer, AutoCloseable {
             private OutputStream output;
 
             public void start(Headers headers) {
-                var dispositionMatcher = dispositionPattern.matcher(headers.get("Content-Disposition"));
-                FormAttachment attachment;
-                if (!dispositionMatcher.find()) {
-                    throw new RuntimeException("cant find match content disposition");
+                HeaderValue disposition = HeaderValue.parse(headers.get("Content-Disposition"));
+                String name = disposition.parameters().get("name");
+                if (!disposition.value().equalsIgnoreCase("form-data") || name == null || name.isEmpty()) {
+                    throw new HttpRequestException(400, "Expected form-data disposition with a name");
                 }
-                if (dispositionMatcher.group(1).equals("text")) {
-                    attachment = new FormAttachment("text", null);
-                } else {
-                    attachment = new FormAttachment("file", dispositionMatcher.group(2));
-                }
+                FormAttachment attachment = new FormAttachment(name, disposition.parameters().get("filename"));
                 var outputStream = OutputStream.fromJava(attachmentHandler.apply(attachment));
                 output = new BufferedOutputStream(Objects.requireNonNull(outputStream), chunkSize);
             }
@@ -67,17 +64,21 @@ public class FormAttachmentHandler {
         BufferedBody input = new BufferedBody();
         for (byte expected : boundary) {
             if (input.read() != (expected & 0xff)) {
-                throw new IOException("Expected starting multipart boundary");
+                throw new HttpRequestException(400, "Expected starting multipart boundary");
             }
         }
         int first = input.read();
         int second = input.read();
         if (first == '-' && second == '-') {
+            int suffix = input.read();
+            if (suffix != -1 && (suffix != '\r' || input.read() != '\n')) {
+                throw new HttpRequestException(400, "Malformed closing multipart boundary");
+            }
             input.drain();
             return;
         }
         if (first != '\r' || second != '\n') {
-            throw new IOException("Expected CRLF after opening boundary");
+            throw new HttpRequestException(400, "Expected CRLF after opening boundary");
         }
 
         // Include the suffix in the match: boundary-like file bytes followed by
@@ -88,32 +89,40 @@ public class FormAttachmentHandler {
         System.arraycopy(boundary, 0, nextPart, 2, boundary.length);
         nextPart[nextPart.length - 2] = '\r';
         nextPart[nextPart.length - 1] = '\n';
-        byte[] lastPart = nextPart.clone();
-        lastPart[lastPart.length - 2] = '-';
-        lastPart[lastPart.length - 1] = '-';
+        byte[] lastPart = new byte[nextPart.length + 2];
+        System.arraycopy(nextPart, 0, lastPart, 0, nextPart.length - 2);
+        lastPart[lastPart.length - 4] = '-';
+        lastPart[lastPart.length - 3] = '-';
+        lastPart[lastPart.length - 2] = '\r';
+        lastPart[lastPart.length - 1] = '\n';
 
         boolean finished = false;
         while (!finished) {
             consumer.start(grabHeaders(input));
-            byte[] pending = new byte[nextPart.length];
-            // accept an empty part whose boundary immediately follows the header blank line
-            pending[0] = '\r';
-            pending[1] = '\n';
-            int pendingSize = 2;
-            int syntheticBytes = 2;
+            byte[] pending = new byte[lastPart.length];
+            // Only actual CRLF bytes delimit parts; file bytes may start with --boundary.
+            int pendingSize = 0;
             while (true) {
                 int value = input.read();
-                if (value == -1) throw new IOException("Multipart content ended before its closing boundary");
+                if (value == -1) {
+                    // A closing boundary may end at EOF without a final CRLF.
+                    if (pendingSize == lastPart.length - 2 && isPrefix(pending, pendingSize, lastPart)) {
+                        consumer.done();
+                        finished = true;
+                        break;
+                    }
+                    throw new HttpRequestException(400, "Multipart content ended before its closing boundary");
+                }
                 pending[pendingSize++] = (byte) value;
 
                 while (!isPrefix(pending, pendingSize, nextPart)
                         && !isPrefix(pending, pendingSize, lastPart)) {
-                    if (syntheticBytes > 0) syntheticBytes--;
-                    else consumer.write(pending[0]);
+                    consumer.write(pending[0]);
                     System.arraycopy(pending, 1, pending, 0, --pendingSize);
                 }
-                if (pendingSize == nextPart.length) {
-                    finished = pending[pendingSize - 1] == '-';
+                if (pendingSize == lastPart.length
+                        || pendingSize == nextPart.length && isPrefix(pending, pendingSize, nextPart)) {
+                    finished = pendingSize == lastPart.length;
                     consumer.done();
                     break;
                 }
@@ -124,6 +133,7 @@ public class FormAttachmentHandler {
     }
 
     private static boolean isPrefix(byte[] pending, int size, byte[] delimiter) {
+        if (size > delimiter.length) return false;
         for (int i = 0; i < size; i++) {
             if (pending[i] != delimiter[i]) return false;
         }
@@ -137,18 +147,24 @@ public class FormAttachmentHandler {
         byte[] buf = new byte[16384];
         while (true) {
             int value = input.read();
-            if (value == -1) throw new IOException("Unexpected end of multipart headers");
-            if (++total > 16384) throw new IOException("Multipart headers exceed 16 KB");
+            if (value == -1) throw new HttpRequestException(400, "Unexpected end of multipart headers");
+            if (++total > 16384) throw new HttpRequestException(400, "Multipart headers exceed 16 KB");
             if (value == '\r') {
-                if (input.read() != '\n') throw new IOException("Expected CRLF in multipart headers");
-                if (++total > 16384) throw new IOException("Multipart headers exceed 16 KB");
+                if (input.read() != '\n') throw new HttpRequestException(400, "Expected CRLF in multipart headers");
+                if (++total > 16384) throw new HttpRequestException(400, "Multipart headers exceed 16 KB");
                 if (lineLength == 0) return headers;
                 String line = new String(buf, 0, lineLength, StandardCharsets.ISO_8859_1);
                 int colon = line.indexOf(':');
-                if (colon <= 0) throw new IOException("Malformed multipart header");
-                headers.put(line.substring(0, colon).trim(), line.substring(colon + 1).trim());
+                if (colon <= 0) throw new HttpRequestException(400, "Malformed multipart header");
+                String name = line.substring(0, colon);
+                for (int i = 0; i < name.length(); i++) {
+                    if (!HeaderValue.token(name.charAt(i))) throw new HttpRequestException(400, "Invalid multipart header name");
+                }
+                if (headers.get(name) != null) throw new HttpRequestException(400, "Duplicate multipart header");
+                headers.put(name, line.substring(colon + 1).trim());
                 lineLength = 0;
             } else {
+                if ((value < 32 && value != '\t') || value == 127) throw new HttpRequestException(400, "Invalid multipart header value");
                 buf[lineLength++] = (byte) value;
             }
         }
@@ -167,7 +183,7 @@ public class FormAttachmentHandler {
             if (position == available) {
                 if (remaining == 0) return -1;
                 available = body.readNBytes(buffer, 0, Math.min(buffer.length, remaining));
-                if (available <= 0) throw new IOException("Request body shorter than Content-Length");
+                if (available <= 0) throw new HttpRequestException(400, "Request body shorter than Content-Length");
                 remaining -= available;
                 position = 0;
             }
@@ -181,7 +197,7 @@ public class FormAttachmentHandler {
 
 
 
-    public FormAttachmentHandler(InputStream body, byte[] boundary, int contentLength) throws IOException {
+    public FormAttachmentHandler(InputStream body, byte[] boundary, int contentLength) {
         if (boundary.length == 0 || contentLength < 0) {
             throw new IllegalArgumentException("Expected a boundary and non-negative Content-Length");
         }

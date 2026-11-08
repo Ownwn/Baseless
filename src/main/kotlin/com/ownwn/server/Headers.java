@@ -4,23 +4,30 @@ package com.ownwn.server;
 import com.ownwn.server.java.lang.replacement.*;
 
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Headers {
     private final Map<String, String> internalHeaders;
-    private static final Pattern headerRegex = Pattern.compile("^([^:]+):(.+)$");
 
     public static Headers fromRawList(List<String> rawHeaders) {
         Headers headers = new Headers();
         for (String header : rawHeaders) {
-            if (header == null) continue;
-            Matcher m = headerRegex.matcher(header);
-            if (!m.find()) {
-                continue;
+            int colon = header.indexOf(':');
+            if (colon <= 0) throw new HttpRequestException(400, "Malformed HTTP header");
+            String name = header.substring(0, colon);
+            for (int i = 0; i < name.length(); i++) {
+                if (!HeaderValue.token(name.charAt(i))) throw new HttpRequestException(400, "Invalid header name");
             }
-
-            headers.put(m.group(1), m.group(2));
+            // Do not silently overwrite duplicate framing headers.
+            if ((name.equalsIgnoreCase("Content-Length") || name.equalsIgnoreCase("Transfer-Encoding"))
+                    && headers.get(name) != null) {
+                throw new HttpRequestException(400, "Duplicate request body framing header");
+            }
+            String value = header.substring(colon + 1).trim();
+            for (int i = 0; i < value.length(); i++) {
+                char c = value.charAt(i);
+                if ((c < 32 && c != '\t') || c == 127) throw new HttpRequestException(400, "Invalid header value");
+            }
+            headers.put(name, value);
         }
         return headers;
     }
@@ -73,8 +80,8 @@ public class Headers {
     }
 
     private String capitalise(String s) {
-        return Arrays.stream(s.split("-"))
-                .map(str -> (str.charAt(0) + "").toUpperCase(Locale.ROOT) + str.substring(1).toLowerCase(Locale.ROOT))
+        return Arrays.stream(s.split("-", -1))
+                .map(str -> str.isEmpty() ? str : (str.charAt(0) + "").toUpperCase(Locale.ROOT) + str.substring(1).toLowerCase(Locale.ROOT))
                 .collect(Collectors.joining("-"));
     }
 

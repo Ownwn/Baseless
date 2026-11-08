@@ -3,10 +3,9 @@ package com.ownwn.server;
 import com.ownwn.server.intercept.InterceptReceiver;
 import com.ownwn.server.intercept.Interceptor;
 import com.ownwn.server.java.lang.replacement.*;
-import com.ownwn.server.java.lang.replacement.stream.InputStream;
 import com.ownwn.server.request.Request;
 import com.ownwn.server.response.Response;
-import com.ownwn.server.response.TemplateResponse;
+import com.ownwn.server.response.WholeBodyResponse;
 
 
 public class Server {
@@ -37,65 +36,31 @@ public class Server {
 
 
     private Server(String packageName, String basePath, short port) throws Throwable {
-        BaseHttpServer httpServer = BaseHttpServer.create(port, request -> {
-            try {
-                handle(request);
-            } catch (Exception e) {
-                //noinspection CallToPrintStackTrace
-                e.printStackTrace();
-            }
-        });
         AnnotationFinder.loadAllAnnotatedMethods(packageName, handleMethods, interceptMethods);
         this.basePath = basePath;
+        BaseHttpServer httpServer = BaseHttpServer.create(port, this::handle);
 
         friendlyAddress = httpServer.getAddress() + ":" + port;
     }
 
-    private void handle(Request request) throws IOException {
+    private Response handle(Request request) {
         if (!request.path().startsWith(basePath)) {
-            handle404(request);
-        } else {
-            request.setPath(request.path().substring(basePath.length()));
+            return Response.notFound;
         }
+        request.setPath(request.path().substring(basePath.length()));
         for (Interceptor interceptor : interceptMethods) {
             InterceptReceiver rec = new InterceptReceiver();
             interceptor.handle(request, rec);
-
-            if (rec.isClosed()) {
-                request.sendResponse(rec.getResponse().status(), rec.getResponse().headers(), rec.getResponse().body());
-                return;
-            }
+            if (rec.isClosed()) return rec.getResponse();
         }
 
-        String url = cleanUrl(request.path());
-        RequestHandler handler = handleMethods.get(url);
-
-        if (handler != null) {
-            if (handler.method() != request.method()) {
-                handle405(request);
-            } else {
-                handleRawRequest(handler, request);
-            }
-
-        } else {
-            handle404(request);
+        RequestHandler handler = handleMethods.get(cleanUrl(request.path()));
+        if (handler == null) return Response.notFound;
+        if (handler.method() != request.method()) {
+            return WholeBodyResponse.of(405, "Method Not Allowed");
         }
+        return handler.handle(request);
     }
-
-    private void handle404(Request request) throws IOException {
-        request.sendResponse404(TemplateResponse.notFound.body());
-    }
-    private void handle405(Request request) throws IOException {
-        request.sendResponse(405, new Headers(), InputStream.emptyInputStream());
-    }
-
-    private void handleRawRequest(RequestHandler handler, Request request) throws IOException {
-        Response response = handler.handle(request);
-
-        request.sendResponse(response.status(), response.headers(), response.body());
-    }
-
-
 
     public static String cleanUrl(String url) {
         if (url.startsWith("/")) url = url.substring(1);

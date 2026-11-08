@@ -1,64 +1,40 @@
 package com.ownwn.server.request;
 
-
 import com.ownwn.server.FormAttachmentHandler;
 import com.ownwn.server.Headers;
+import com.ownwn.server.HeaderValue;
 import com.ownwn.server.HttpMethod;
-
+import com.ownwn.server.HttpRequestException;
 import com.ownwn.server.java.lang.replacement.*;
 import com.ownwn.server.java.lang.replacement.stream.InputStream;
 import com.ownwn.server.java.lang.replacement.stream.OutputStream;
-
 import java.nio.charset.StandardCharsets;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class PostRequest extends Request {
-    private static final Pattern formBoundaryPattern = Pattern.compile("^\\s*multipart/form-data;\\s*boundary=(.+)\\s*$");
-
-    private String multiPartFormBoundary = null;
-    private FormAttachmentHandler handler = null;
-
+    private FormAttachmentHandler handler;
 
     public PostRequest(SimpleAddress remoteAddress, InputStream requestBody, Headers requestHeaders,
                        OutputStream responseBody, String path, Map<String, String> cookies, Map<String, String> queryParameters) {
-
         super(remoteAddress, requestBody, requestHeaders, responseBody, path, cookies, queryParameters);
-
-        multiPartFormBoundary = tryParseMultiPartFormBoundary();
-
     }
 
     @Override
-    public HttpMethod method() {
-        return HttpMethod.POST;
-    }
+    public HttpMethod method() { return HttpMethod.POST; }
 
     public FormAttachmentHandler formAttachmentHandler() {
-        if (multiPartFormBoundary == null) {
-            throw new RuntimeException("Malformed request!");
-        };
         if (handler != null) return handler;
-
-        int contentLength = Integer.parseUnsignedInt(requestHeaders().get("Content-Length").trim());
-
-        try {
-            return (handler = new FormAttachmentHandler(requestBody, multiPartFormBoundary.getBytes(StandardCharsets.UTF_8), contentLength));
-        } catch (IOException e) {
-            throw new RuntimeException(e); // todo all the exceptions
-        }
-    }
-
-    private String tryParseMultiPartFormBoundary() {
         String contentType = requestHeaders.get("Content-Type");
-        if (contentType == null) throw new RuntimeException("Missing content type!");
-
-        Matcher formBoundaryMatcher = formBoundaryPattern.matcher(contentType);
-        if (!formBoundaryMatcher.find()) {
-            throw new RuntimeException("cant find form boundary in content type!");
+        if (contentType == null) throw new HttpRequestException(415, "Expected multipart/form-data");
+        HeaderValue parsed = HeaderValue.parse(contentType);
+        if (!parsed.value().equalsIgnoreCase("multipart/form-data")) {
+            throw new HttpRequestException(415, "Expected multipart/form-data");
         }
-
-        return "--" + formBoundaryMatcher.group(1);
+        String boundary = parsed.parameters().get("boundary");
+        if (boundary == null || !boundary.matches("[0-9A-Za-z'()+_,./:=? -]{1,70}") || boundary.endsWith(" ")) {
+            throw new HttpRequestException(400, "Missing or invalid multipart boundary");
+        }
+        handler = new FormAttachmentHandler(requestBody,
+                ("--" + boundary).getBytes(StandardCharsets.US_ASCII), contentLength());
+        return handler;
     }
-
 }

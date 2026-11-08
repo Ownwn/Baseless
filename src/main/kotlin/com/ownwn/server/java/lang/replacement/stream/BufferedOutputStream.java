@@ -33,7 +33,12 @@ public final class BufferedOutputStream implements OutputStream {
 
     @Override
     public void close() throws IOException {
-        flush();
+        try {
+            flush();
+        } catch (IOException | RuntimeException | Error e) {
+            try { outputStream.close(); } catch (Exception closeError) { e.addSuppressed(closeError); }
+            throw e;
+        }
         outputStream.close();
     }
 

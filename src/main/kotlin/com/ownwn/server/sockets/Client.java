@@ -55,7 +55,7 @@ public abstract class Client {
                                 long numReaded = (long) FFIHelper.of().callFunction("read", JAVA_LONG, List.of(JAVA_INT, ADDRESS, JAVA_LONG), List.of(c, tempBuf, toReadChunk));
 
                                 if (numReaded < 0) {
-                                    return totalRead == 0 ? -1 : totalRead;
+                                    throw new IOException("Failed to read request body from socket");
                                 } else if (numReaded == 0) {
                                     break;
                                 } else {
@@ -89,7 +89,9 @@ public abstract class Client {
                     public void write(int b) {
                         MemorySegment resByte = arena.allocateFrom(JAVA_BYTE, (byte) b); // todo optimize chunk size
                         try {
-                            FFIHelper.writeNative(c, resByte, 1L);
+                            if (FFIHelper.writeNative(c, resByte, 1L) != 1) {
+                                throw new IOException("Failed to write byte to socket");
+                            }
                         } catch (Throwable e) {
                             throw new RuntimeException(e);
                         }
@@ -116,8 +118,7 @@ public abstract class Client {
                                 MemorySegment writeSlice = nativeBuf.asSlice(written);
                                 long bytesWritten  = FFIHelper.writeNative(c, writeSlice, len - written);
 
-                                if (bytesWritten < 0) {
-                                    close();
+                                if (bytesWritten <= 0) {
                                     throw new RuntimeException("Failed to write bytes to socket. connection may have been prematurely closed?");
                                 }
                                 written += bytesWritten;

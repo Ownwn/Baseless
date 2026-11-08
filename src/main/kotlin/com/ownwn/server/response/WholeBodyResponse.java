@@ -16,6 +16,7 @@ public class WholeBodyResponse extends Response {
     private WholeBodyResponse(int status, byte[] body, Headers headers) {
         super(headers, status);
         this.body = body;
+        headers.put("Content-Length", Integer.toString(body.length));
     }
 
     @Override

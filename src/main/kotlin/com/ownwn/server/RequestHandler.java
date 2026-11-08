@@ -4,6 +4,7 @@ import com.ownwn.server.request.Request;
 import com.ownwn.server.response.Response;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
 interface RequestHandler {
@@ -20,7 +21,11 @@ interface RequestHandler {
                 try {
                     Object res = m.invoke(instance, request);
                     return (Response) res;
-                } catch (Exception e) {
+                } catch (InvocationTargetException e) {
+                    if (e.getCause() instanceof RuntimeException cause) throw cause;
+                    if (e.getCause() instanceof Error cause) throw cause;
+                    throw new RuntimeException(e.getCause());
+                } catch (ReflectiveOperationException e) {
                     throw new RuntimeException(e);
                 }
             }

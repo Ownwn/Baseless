@@ -3,17 +3,20 @@ package com.ownwn.server.request;
 
 import com.ownwn.server.Headers;
 import com.ownwn.server.HttpMethod;
+import com.ownwn.server.HttpRequestException;
+import com.ownwn.server.response.ResponseWriter;
 import com.ownwn.server.java.lang.replacement.*;
 import com.ownwn.server.java.lang.replacement.stream.InputStream;
 import com.ownwn.server.java.lang.replacement.stream.OutputStream;
 
-import java.nio.charset.StandardCharsets;
 
 public abstract class Request {
     protected final SimpleAddress remoteAddress;
     protected final InputStream requestBody;
     protected final Headers requestHeaders;
     protected final OutputStream responseBody;
+    private final ResponseWriter responseWriter;
+    private final Integer contentLength;
     protected String path;
     protected final Map<String, String> cookies;
     protected final Map<String, String> queryParameters;
@@ -23,10 +26,35 @@ public abstract class Request {
         this.remoteAddress = remoteAddress;
         this.requestBody = requestBody;
         this.requestHeaders = requestHeaders;
+        this.contentLength = validateBodyFraming(requestHeaders);
         this.responseBody = responseBody;
+        this.responseWriter = new ResponseWriter(responseBody);
         this.path = path;
         this.cookies = cookies.entrySet().stream().collect(HashMap::new, (map, val) -> map.put(val.getKey().trim(), val.getValue()), (a1, a2) -> {throw new Error("no parrelel");});
         this.queryParameters = queryParameters;
+    }
+
+    private static Integer validateBodyFraming(Headers headers) {
+        if (headers.get("Transfer-Encoding") != null) {
+            if (headers.get("Content-Length") != null) {
+                throw new HttpRequestException(400, "Conflicting request body framing");
+            }
+            throw new HttpRequestException(501, "Transfer-Encoding is not supported");
+        }
+        String length = headers.get("Content-Length");
+        if (length == null) return null;
+        length = length.trim();
+        if (!length.matches("[0-9]+")) throw new HttpRequestException(400, "Invalid Content-Length");
+        try {
+            return Integer.parseInt(length);
+        } catch (NumberFormatException e) {
+            throw new HttpRequestException(413, "Content-Length exceeds supported size");
+        }
+    }
+
+    public int contentLength() {
+        if (contentLength == null) throw new HttpRequestException(411, "Content-Length is required");
+        return contentLength;
     }
 
     public static GetRequest getRequest(SimpleAddress remoteAddress, InputStream requestBody, Headers requestHeaders, OutputStream responseBody, String path, Map<String, String> cookies, Map<String, String> queryParameters) {
@@ -92,6 +120,13 @@ public abstract class Request {
     public static String getHttpMessageFromCode(int status) {
         return "HTTP/1.1 " + status + " " + switch (status) {
             case 200 -> "OK";
+            case 302 -> "Found";
+            case 411 -> "Length Required";
+            case 413 -> "Content Too Large";
+            case 415 -> "Unsupported Media Type";
+            case 431 -> "Request Header Fields Too Large";
+            case 500 -> "Internal Server Error";
+            case 501 -> "Not Implemented";
             case 404 -> "Not Found";
             case 401 -> "Unauthorised";
             case 405 -> "Method Not Allowed";
@@ -101,26 +136,17 @@ public abstract class Request {
         };
     }
 
+    /** Prefer returning a Response from handlers; kept for existing callers. */
     public void sendResponse(int status, Headers headers, InputStream body) {
         try {
-
-            responseBody.write(getHttpMessageFromCode(status).getBytes(StandardCharsets.UTF_8));
-
-
-            for (var header : headers.entrySet()) {
-                responseBody.write(new byte[]{13, 10});
-                responseBody.write(header.getKey().getBytes(StandardCharsets.UTF_8));
-                responseBody.write(": ".getBytes(StandardCharsets.UTF_8));
-                responseBody.write(header.getValue().getBytes(StandardCharsets.UTF_8));
-            }
-            responseBody.write(new byte[]{13, 10, 13, 10});
-
-            body.transferTo(responseBody);
-
-            responseBody.close();
+            responseWriter.send(status, headers, body);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public ResponseWriter responseWriter() {
+        return responseWriter;
     }
 
     public abstract HttpMethod method();
@@ -152,37 +178,5 @@ public abstract class Request {
     public void setPath(String newPath) {
         this.path = newPath;
     }
-
-//    @Override
-//    public boolean equals(Object obj) {
-//        if (obj == this) return true;
-//        if (obj == null || obj.getClass() != this.getClass()) return false;
-//        var that = (Request) obj;
-//        return Objects.equals(this.remoteAddress, that.remoteAddress) &&
-//                Objects.equals(this.requestBody, that.requestBody) &&
-//                Objects.equals(this.requestHeaders, that.requestHeaders) &&
-//                Objects.equals(this.responseBody, that.responseBody) &&
-//                Objects.equals(this.path, that.path) &&
-//                Objects.equals(this.cookies, that.cookies) &&
-//                Objects.equals(this.queryParameters, that.queryParameters);
-//    }
-//
-//    @Override
-//    public int hashCode() {
-//        return Objects.hash(remoteAddress, requestBody, requestHeaders, responseBody, path, cookies, queryParameters);
-//    }
-//
-//    @Override
-//    public String toString() {
-//        return "Request[" +
-//                "remoteAddress=" + remoteAddress + ", " +
-//                "requestBody=" + requestBody + ", " +
-//                "requestHeaders=" + requestHeaders + ", " +
-//                "responseBody=" + responseBody + ", " +
-//                "path=" + path + ", " +
-//                "cookies=" + cookies + ", " +
-//                "queryParameters=" + queryParameters + ']';
-//    }
-
 
 }
