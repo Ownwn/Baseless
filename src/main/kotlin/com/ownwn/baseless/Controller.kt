@@ -2,6 +2,7 @@ package com.ownwn.baseless
 
 import com.ownwn.server.Handle
 import com.ownwn.server.HttpMethod
+import com.ownwn.server.java.lang.replacement.stream.OutputStream
 import com.ownwn.server.request.PostRequest
 import com.ownwn.server.request.Request
 import com.ownwn.server.response.Response
@@ -25,6 +26,23 @@ class Controller {
             val target = Database.dataRoot.resolve(Database.createFileName(attachment.fileName()))
             target.createNewFile()
             target.outputStream()
+        }
+
+        return WholeBodyResponse.ok()
+    }
+
+    @Handle("/submitsilent", method = HttpMethod.POST)
+    fun submitsilent(request: PostRequest): Response {
+
+        val attachments = request.formAttachmentHandler() ?: return WholeBodyResponse.badRequest()
+        val isTooBig = request.requestHeaders()?.get("Content-Length")?.toIntOrNull()?.let { it > 10 } ?: true
+        if (isTooBig) {
+            return WholeBodyResponse.badRequest("too big")
+        }
+        attachments.consumeAttachments { attachment ->
+            val target = Database.dataRoot.resolve(Database.createFileName(attachment.fileName()))
+            target.createNewFile()
+            LimitedOutputStream(target.outputStream(), 100_000) // 100kb  file limit x10 files = 1mb limit per req
         }
 
         return WholeBodyResponse.ok()

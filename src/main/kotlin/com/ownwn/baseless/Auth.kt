@@ -9,12 +9,13 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 const val loginPath: String = "/login"
+const val submitSilentPath: String = "/submitsilent"
 const val cookieName: String = "COOKIE_VALUE"
 
 class Auth {
     @Intercept
     fun auth(request: Request, interceptor: InterceptReceiver) {
-        if (loginPath == request.path()) {
+        if (loginPath == request.path() || submitSilentPath == request.path()) {
             return
         }
 
