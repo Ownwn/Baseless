@@ -151,7 +151,11 @@ export function Home() {
             }
 
         }
+        const theDate = new Date(entry.createdAt);
         return <>
+            {theDate.getHours() % 12 + ":" + theDate.getMinutes() + ", "}
+            {theDate.toDateString()}
+            {" | "}
             {entryText}
             <span><button onClick={() => deleteItem(entry)} className={styles.deleteButton}>Delete</button></span>
         </>

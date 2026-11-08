@@ -55,7 +55,7 @@ object Database {
 @ConsistentCopyVisibility
 data class Entry private constructor(val name: String, val plainText: Boolean, val content: String, val createdAt: Long, val id: Int) : JsonConvertible {
     override fun toJson(): String {
-        return "{\"name\": \"$name\", \"plainText\": $plainText, \"content\": \"$content\", \"createdAt\": \"$createdAt\", \"id\": $id}"
+        return "{\"name\": \"$name\", \"plainText\": $plainText, \"content\": \"$content\", \"createdAt\": $createdAt, \"id\": $id}"
     }
 
     companion object {
