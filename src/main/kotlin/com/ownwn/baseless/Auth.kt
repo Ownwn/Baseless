@@ -11,11 +11,29 @@ import java.nio.charset.StandardCharsets
 const val loginPath: String = "/login"
 const val submitSilentPath: String = "/submitsilent"
 const val cookieName: String = "COOKIE_VALUE"
+const val silentKeyName: String = "SILENT_KEY"
 
 class Auth {
     @Intercept
     fun auth(request: Request, interceptor: InterceptReceiver) {
-        if (loginPath == request.path() || submitSilentPath == request.path()) {
+        if (loginPath == request.path()) {
+            return
+        }
+        if (submitSilentPath == request.path()) {
+            if (BaselessApplication.getEnv(silentKeyName).isNullOrBlank()) {
+                interceptor.closeWithResponse(WholeBodyResponse.of(500, "silent submit key not set in env!"))
+                return
+            }
+
+            if (request.queryParameters()?.containsKey("key") != true) {
+                interceptor.closeWithResponse(WholeBodyResponse.badRequest("Missing key query param"))
+                return
+            }
+
+            if (request.queryParameters()["key"] != BaselessApplication.getEnv(silentKeyName)) {
+                interceptor.closeWithResponse(WholeBodyResponse.unauthorised())
+                return
+            }
             return
         }
 

@@ -35,14 +35,14 @@ class Controller {
     fun submitsilent(request: PostRequest): Response {
 
         val attachments = request.formAttachmentHandler() ?: return WholeBodyResponse.badRequest()
-        val isTooBig = request.requestHeaders()?.get("Content-Length")?.toIntOrNull()?.let { it > 10 } ?: true
+        val isTooBig = request.requestHeaders()?.get("Content-Length")?.toIntOrNull()?.let { it > 100_000_000 } ?: true
         if (isTooBig) {
             return WholeBodyResponse.badRequest("too big")
         }
         attachments.consumeAttachments { attachment ->
             val target = Database.dataRoot.resolve(Database.createFileName(attachment.fileName()))
             target.createNewFile()
-            LimitedOutputStream(target.outputStream(), 100_000) // 100kb  file limit x10 files = 1mb limit per req
+            target.outputStream()
         }
 
         return WholeBodyResponse.ok()
