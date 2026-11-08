@@ -3,6 +3,7 @@ package com.ownwn.server;
 import com.ownwn.server.intercept.InterceptReceiver;
 import com.ownwn.server.intercept.Interceptor;
 import com.ownwn.server.java.lang.replacement.*;
+import com.ownwn.server.java.lang.replacement.stream.InputStream;
 import com.ownwn.server.request.Request;
 import com.ownwn.server.response.Response;
 import com.ownwn.server.response.TemplateResponse;
@@ -70,7 +71,12 @@ public class Server {
         RequestHandler handler = handleMethods.get(url);
 
         if (handler != null) {
-            handleRawRequest(handler, request);
+            if (handler.method() != request.method()) {
+                handle405(request);
+            } else {
+                handleRawRequest(handler, request);
+            }
+
         } else {
             handle404(request);
         }
@@ -78,6 +84,9 @@ public class Server {
 
     private void handle404(Request request) throws IOException {
         request.sendResponse404(TemplateResponse.notFound.body());
+    }
+    private void handle405(Request request) throws IOException {
+        request.sendResponse(405, new Headers(), InputStream.emptyInputStream());
     }
 
     private void handleRawRequest(RequestHandler handler, Request request) throws IOException {

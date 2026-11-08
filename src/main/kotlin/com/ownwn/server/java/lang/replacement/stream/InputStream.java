@@ -33,4 +33,18 @@ public interface InputStream {
         return transferred;
     }
 
+    static InputStream emptyInputStream() {
+        return new InputStream() {
+            @Override
+            public int read() throws IOException {
+                return -1;
+            }
+
+            @Override
+            public void close() throws IOException {
+
+            }
+        };
+    }
+
 }

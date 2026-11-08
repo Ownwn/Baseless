@@ -94,6 +94,7 @@ public abstract class Request {
             case 200 -> "OK";
             case 404 -> "Not Found";
             case 401 -> "Unauthorised";
+            case 405 -> "Method Not Allowed";
             case 400 -> "Bad Request";
             case 505 -> "HTTP Version Not Supported";
             default -> "NYI";
