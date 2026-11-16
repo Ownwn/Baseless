@@ -18,7 +18,7 @@ export function Home() {
     const [secondsSinceUpdate, setSecondsSinceUpdate] = useState(0)
     const [encryptionKey, setEncryptionKey] = useState("")
 
-    const images = ["jpg", "jpeg", "png", "webp", "gif", "svg"]
+    const images = ["jpg", "jpeg", "png", "webp", "gif", "svg", "heic"]
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -181,7 +181,7 @@ export function Home() {
     }
 
     function isImage(name: string): boolean {
-        return images.some(s => name.endsWith(s))
+        return images.some(s => name.toLowerCase().endsWith(s))
     }
 
     async function deleteItem(entry: Entry) {
